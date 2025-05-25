@@ -1,0 +1,9 @@
+{
+  "name": "send-discord-webhook",
+  "scripts": {
+    "postinstall": "cd $(dirname $npm_package_json) && nix run .#bun2nix -- --output-file ./bun.nix"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.5"
+  }
+}
