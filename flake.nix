@@ -35,7 +35,7 @@
 
       typeCheck = pkgs.runCommand "typeCheck" { } ''
         cp -Lr ${nodeModules}/node_modules ./node_modules
-        cp -Lr ${./src} ./src
+        cp -Lr ${./index.ts} ./index.ts
         cp -L ${./tsconfig.json} ./tsconfig.json
         ${pkgs.typescript}/bin/tsc
         touch $out
@@ -43,7 +43,7 @@
 
       lintCheck = pkgs.runCommand "lintCheck" { } ''
         cp -Lr ${nodeModules}/node_modules ./node_modules
-        cp -Lr ${./src} ./src
+        cp -Lr ${./index.ts} ./index.ts
         cp -L ${./biome.jsonc} ./biome.jsonc
         cp -L ${./tsconfig.json} ./tsconfig.json
         cp -L ${./package.json} ./package.json
@@ -75,7 +75,7 @@
           formatter = formatter;
           typeCheck = typeCheck;
           lintCheck = lintCheck;
-          discord-webhook-queue = pkgs.discord-webhook-queue;
+          discord-webhook-dispatcher = pkgs.discord-webhook-dispatcher;
         };
 
     in
