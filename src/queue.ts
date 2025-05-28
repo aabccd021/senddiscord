@@ -30,7 +30,7 @@ function parseQueueRequest(body: unknown): QueueRequest {
   };
 }
 
-export async function handleRequest(
+export async function handleQueueRequest(
   db: sqlite.Database,
   request: Request,
 ): Promise<Response> {
