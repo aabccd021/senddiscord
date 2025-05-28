@@ -1,4 +1,4 @@
-import * as sqlite from "bun:sqlite";
+import type * as sqlite from "bun:sqlite";
 
 type QueueRequest = {
   readonly webhookUrl: string;
@@ -30,7 +30,7 @@ function parseQueueRequest(body: unknown): QueueRequest {
   };
 }
 
-async function handleRequest(
+export async function handleRequest(
   db: sqlite.Database,
   request: Request,
 ): Promise<Response> {
@@ -46,16 +46,3 @@ async function handleRequest(
 
   return new Response(undefined, { status: 200 });
 }
-
-const db = new sqlite.Database(
-  "/var/lib/discord-webhook-dispatcher/queue_db/db.sqlite",
-  {
-    strict: true,
-    safeIntegers: true,
-    create: true,
-  },
-);
-
-Bun.serve({
-  fetch: (request: Request): Promise<Response> => handleRequest(db, request),
-});

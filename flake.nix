@@ -35,7 +35,7 @@
 
       typeCheck = pkgs.runCommand "typeCheck" { } ''
         cp -Lr ${nodeModules}/node_modules ./node_modules
-        cp -Lr ${./index.ts} ./index.ts
+        cp -Lr ${./src} ./src
         cp -L ${./tsconfig.json} ./tsconfig.json
         ${pkgs.typescript}/bin/tsc
         touch $out
@@ -43,7 +43,7 @@
 
       lintCheck = pkgs.runCommand "lintCheck" { } ''
         cp -Lr ${nodeModules}/node_modules ./node_modules
-        cp -Lr ${./index.ts} ./index.ts
+        cp -Lr ${./src} ./src
         cp -L ${./biome.jsonc} ./biome.jsonc
         cp -L ${./tsconfig.json} ./tsconfig.json
         cp -L ${./package.json} ./package.json
@@ -65,9 +65,18 @@
         buildInputs = builtins.attrValues inputPackages;
       };
 
+      scripts.fix = pkgs.writeShellApplication {
+        name = "fix";
+        runtimeInputs = [ pkgs.biome ];
+        text = ''
+          biome check --fix --unsafe
+        '';
+      };
+
       packages =
         devShells
         // test
+        // scripts
         // inputPackages
         // {
           tests = pkgs.linkFarm "tests" test;
