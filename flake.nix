@@ -9,20 +9,7 @@
     { self, ... }@inputs:
     let
 
-      overlays.default = (
-        final: prev: {
-          send-discord-webhook = final.runCommand "compiled-server" { } ''
-            ${final.bun}/bin/bun build ${./index.ts} \
-              --compile \
-              --minify \
-              --sourcemap \
-              --bytecode \
-              --outfile server
-            mkdir -p "$out/bin"
-            mv server "$out/bin/send-discord-webhook"
-          '';
-        }
-      );
+      overlays.default = (final: prev: import ./overlay.nix { pkgs = final; });
 
       pkgs = import inputs.nixpkgs {
         system = "x86_64-linux";
@@ -48,7 +35,7 @@
 
       typeCheck = pkgs.runCommand "typeCheck" { } ''
         cp -Lr ${nodeModules}/node_modules ./node_modules
-        cp -L ${./index.ts} ./index.ts
+        cp -Lr ${./src} ./src
         cp -L ${./tsconfig.json} ./tsconfig.json
         ${pkgs.typescript}/bin/tsc
         touch $out
@@ -56,7 +43,7 @@
 
       lintCheck = pkgs.runCommand "lintCheck" { } ''
         cp -Lr ${nodeModules}/node_modules ./node_modules
-        cp -Lr ${./index.ts} ./index.ts
+        cp -Lr ${./src} ./src
         cp -L ${./biome.jsonc} ./biome.jsonc
         cp -L ${./tsconfig.json} ./tsconfig.json
         cp -L ${./package.json} ./package.json
@@ -88,8 +75,7 @@
           formatter = formatter;
           typeCheck = typeCheck;
           lintCheck = lintCheck;
-          default = pkgs.send-discord-webhook;
-          send-discord-webhook = pkgs.send-discord-webhook;
+          discord-webhook-queue = pkgs.discord-webhook-queue;
         };
 
     in
