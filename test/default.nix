@@ -2,28 +2,28 @@
 let
 
   mkTest =
-    prefix: dir: name:
-    pkgs.runCommandLocal "${prefix}${name}" {
-      env.TEST_FILE = "${dir}/${name}.sh";
+    name:
+    pkgs.runCommandLocal "test-${name}" {
+      env.TEST_FILE = "${./.}/${name}.sh";
       buildInputs = [
-        pkgs.jq
-        pkgs.jwt-cli
         pkgs.curl
-        pkgs.tinyxxd
+        pkgs.systemd-notify-fifo-server
         discord-webhook-dispatcher
       ];
     } (builtins.readFile ./test.sh);
 
   mapTests =
-    prefix: dir: names:
+    names:
     builtins.listToAttrs (
       builtins.map (name: {
-        name = prefix + name;
-        value = mkTest prefix dir name;
+        name = "test-" + name;
+        value = mkTest name;
       }) names
     );
 
-  normalTests = mapTests "test-google-normal-" ./normal [
+  normalTests = mapTests [
+    "success"
+
   ];
 
 in

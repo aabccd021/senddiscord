@@ -4,6 +4,7 @@
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
   inputs.treefmt-nix.url = "github:numtide/treefmt-nix";
   inputs.bun2nix.url = "github:baileyluTCD/bun2nix";
+  inputs.systemd-notify-fifo.url = "github:aabccd021/systemd-notify-fifo";
 
   outputs =
     { self, ... }@inputs:
@@ -11,7 +12,12 @@
 
       overlays.default = (final: prev: import ./overlay.nix { pkgs = final; });
 
-      pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
+      pkgs = import inputs.nixpkgs {
+        system = "x86_64-linux";
+        overlays = [
+          inputs.systemd-notify-fifo.overlays.default
+        ];
+      };
 
       overlayPackages = import ./overlay.nix {
         pkgs = pkgs;
