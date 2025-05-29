@@ -6,7 +6,7 @@ curl \
   --show-error \
   --fail \
   --header 'Content-Type: application/json' \
+  --header 'X-Discord-Webhook-Url: https://discord.com/api/webhooks/123456789012345678/abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' \
   --data '{
-    "webhookUrl": "https://blabla.com",
-    "message": "hello"
+    "content": "hello"
   }'

@@ -32,7 +32,7 @@ async function main(): Promise<void> {
     CREATE TABLE IF NOT EXISTS queue (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       webhook_url TEXT NOT NULL,
-      message TEXT NOT NULL,
+      content TEXT NOT NULL,
       created_time_ms INTEGER NOT NULL
     );
   `);

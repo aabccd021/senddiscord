@@ -1,8 +1,7 @@
 import type * as sqlite from "bun:sqlite";
 
 type QueueRequest = {
-  readonly webhookUrl: string;
-  readonly message: string;
+  readonly content: string;
 };
 
 function parseQueueRequest(body: unknown): QueueRequest {
@@ -12,21 +11,14 @@ function parseQueueRequest(body: unknown): QueueRequest {
   if (typeof body !== "object") {
     throw new Error("Request body must be an object");
   }
-  if (!("webhookUrl" in body)) {
-    throw new Error('Request body must contain "webhookUrl"');
+  if (!("content" in body)) {
+    throw new Error('Request body must contain "content"');
   }
-  if (typeof body.webhookUrl !== "string") {
-    throw new Error('Request body "webhookUrl" must be a string');
-  }
-  if (!("message" in body)) {
-    throw new Error('Request body must contain "message"');
-  }
-  if (typeof body.message !== "string") {
-    throw new Error('Request body "message" must be a string');
+  if (typeof body.content !== "string") {
+    throw new Error('Request body "content" must be a string');
   }
   return {
-    webhookUrl: body.webhookUrl,
-    message: body.message,
+    content: body.content,
   };
 }
 
@@ -35,14 +27,15 @@ export async function handleQueueRequest(
   request: Request,
 ): Promise<Response> {
   const requestBody = await request.json();
-  const { webhookUrl, message } = parseQueueRequest(requestBody);
+  const webhookUrl = request.headers.get("X-Discord-Webhook-Url");
+  const { content } = parseQueueRequest(requestBody);
 
   db.query(
     `
-    INSERT INTO queue (webhook_url, message, created_time_ms)
-    VALUES ($webhookUrl, $message, $createdTimeMs)
+    INSERT INTO queue (webhook_url, content, created_time_ms)
+    VALUES ($webhookUrl, $content, $createdTimeMs)
   `,
-  ).run({ webhookUrl, message, createdTimeMs: Date.now() });
+  ).run({ webhookUrl, content, createdTimeMs: Date.now() });
 
   return new Response(undefined, { status: 200 });
 }
