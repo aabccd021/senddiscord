@@ -1,41 +1,45 @@
 import type * as sqlite from "bun:sqlite";
+import * as t from "superstruct";
 
-type QueueRequest = {
-  readonly content: string;
-};
-
-function parseQueueRequest(body: unknown): QueueRequest {
-  if (body === null) {
-    throw new Error("Request body cannot be null");
-  }
-  if (typeof body !== "object") {
-    throw new Error("Request body must be an object");
-  }
-  if (!("content" in body)) {
-    throw new Error('Request body must contain "content"');
-  }
-  if (typeof body.content !== "string") {
-    throw new Error('Request body "content" must be a string');
-  }
-  return {
-    content: body.content,
-  };
-}
+const Message = t.object({
+  content: t.string(),
+});
 
 export async function handleQueueRequest(
   db: sqlite.Database,
   request: Request,
 ): Promise<Response> {
-  const requestBody = await request.json();
   const webhookUrl = request.headers.get("X-Discord-Webhook-Url");
-  const { content } = parseQueueRequest(requestBody);
+  if (!webhookUrl) {
+    return new Response("Missing X-Discord-Webhook-Url header", {
+      status: 400,
+    });
+  }
+
+  const message = await request.json();
+  t.assert(message, Message);
 
   db.query(
     `
-    INSERT INTO queue (webhook_url, content, created_time_ms)
-    VALUES ($webhookUrl, $content, $createdTimeMs)
+    INSERT INTO queue (
+      uuid,
+      webhook_url, 
+      content, 
+      created_time_ms
+    )
+    VALUES (
+      $uuid,
+      $webhookUrl, 
+      $content, 
+      $createdTimeMs
+    )
   `,
-  ).run({ webhookUrl, content, createdTimeMs: Date.now() });
+  ).run({
+    uuid: crypto.randomUUID(),
+    webhookUrl,
+    content: message.content,
+    createdTimeMs: Date.now(),
+  });
 
   return new Response(undefined, { status: 200 });
 }

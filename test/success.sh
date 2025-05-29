@@ -10,3 +10,5 @@ curl \
   --data '{
     "content": "hello"
   }'
+
+sleep 2

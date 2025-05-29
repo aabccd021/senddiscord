@@ -18,6 +18,12 @@
     url = "https://registry.npmjs.org/bun-types/-/bun-types-1.2.14.tgz";
     hash = "sha512-Kuh4Ub28ucMRWeiUUWMHsT9Wcbr4H3kLIO72RZZElSDxSu7vpetRvxIUDUaW6QtaIeixIpm7OXtNnZPf82EzwA==";
   };
+  "superstruct" = {
+    out_path = "superstruct";
+    name = "superstruct@2.0.2";
+    url = "https://registry.npmjs.org/superstruct/-/superstruct-2.0.2.tgz";
+    hash = "sha512-uV+TFRZdXsqXTL2pRvujROjdZQ4RAlBUS5BTh9IGm+jTqQntYThciG/qu57Gs69yjnVUSqdxF9YLmSnpupBW9A==";
+  };
   "undici-types" = {
     out_path = "undici-types";
     name = "undici-types@6.21.0";

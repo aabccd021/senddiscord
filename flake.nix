@@ -10,7 +10,13 @@
     { self, ... }@inputs:
     let
 
-      overlays.default = (final: prev: import ./overlay.nix { pkgs = final; });
+      overlays.default = (
+        final: prev:
+        import ./overlay.nix {
+          pkgs = final;
+          inputs = inputs;
+        }
+      );
 
       pkgs = import inputs.nixpkgs {
         system = "x86_64-linux";
@@ -21,6 +27,7 @@
 
       overlayPackages = import ./overlay.nix {
         pkgs = pkgs;
+        inputs = inputs;
       };
 
       test = import ./test {

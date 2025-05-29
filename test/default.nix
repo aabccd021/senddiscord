@@ -23,7 +23,7 @@ let
 
   normalTests = mapTests [
     "success"
-
+    "empty"
   ];
 
 in

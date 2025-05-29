@@ -1,6 +1,7 @@
 import * as sqlite from "bun:sqlite";
 import * as util from "node:util";
 import { $ } from "bun";
+import { dequeue } from "./dequeue.ts";
 import { handleQueueRequest } from "./queue.ts";
 
 async function main(): Promise<void> {
@@ -30,7 +31,7 @@ async function main(): Promise<void> {
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS queue (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      uuid TEXT PRIMARY KEY,
       webhook_url TEXT NOT NULL,
       content TEXT NOT NULL,
       created_time_ms INTEGER NOT NULL
@@ -45,11 +46,16 @@ async function main(): Promise<void> {
 
   await $`systemd-notify --ready --no-block`;
 
-  await new Promise<void>((resolve) => {
-    process.on("SIGTERM", () => {
-      resolve();
-    });
+  let running = true;
+  process.on("SIGTERM", () => {
+    running = false;
   });
+
+  while (running) {
+    await dequeue(db);
+  }
+
+  db.close();
 
   process.exit(0);
 }
