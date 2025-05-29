@@ -14,15 +14,14 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
   const message = db
     .query(
       `
-    SELECT 
-      uuid,
-      webhook_url AS webhookUrl,
-      content,
-      created_time_ms AS createdTimeMs
-    FROM queue
-    ORDER BY created_time_ms ASC
-    LIMIT 1
-  `,
+      SELECT 
+        uuid,
+        webhook_url AS webhookUrl,
+        content,
+        created_time_ms AS createdTimeMs
+      FROM queue
+      ORDER BY created_time_ms ASC
+      `,
     )
     .get();
   t.assert(message, Message);
