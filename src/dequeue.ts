@@ -6,7 +6,7 @@ const Message = t.nullable(
     uuid: t.string(),
     content: t.string(),
     webhookUrl: t.string(),
-    createdTimeMs: t.bigint(),
+    createdTime: t.bigint(),
   }),
 );
 
@@ -18,9 +18,9 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
         uuid,
         webhook_url AS webhookUrl,
         content,
-        created_time_ms AS createdTimeMs
+        created_time AS createdTime
       FROM queue
-      ORDER BY created_time_ms ASC
+      ORDER BY created_time ASC
       `,
     )
     .get();

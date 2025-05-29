@@ -30,12 +30,25 @@ async function main(): Promise<void> {
   });
 
   db.exec(`
+    PRAGMA journal_mode = WAL;
+    PRAGMA synchronous = NORMAL;
+    PRAGMA foreign_keys = ON;
+
+    CREATE TABLE IF NOT EXISTS rate_limit (
+      bucket TEXT PRIMARY KEY,
+      reset_time_epoch INTEGER NOT NULL,
+      remaining INTEGER NOT NULL
+    ) STRICT;
+
     CREATE TABLE IF NOT EXISTS queue (
-      uuid TEXT PRIMARY KEY,
+      uuid TEXT NOT NULL,
       webhook_url TEXT NOT NULL,
       content TEXT NOT NULL,
-      created_time_ms INTEGER NOT NULL
-    );
+      created_time INTEGER NOT NULL,
+      rate_limit_bucket TEXT,
+      CONSTRAINT uuid_pk PRIMARY KEY (uuid),
+      CONSTRAINT rate_limit_bucket_fk FOREIGN KEY (rate_limit_bucket) REFERENCES rate_limit (bucket)
+    ) STRICT;
   `);
 
   Bun.serve({

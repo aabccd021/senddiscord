@@ -25,20 +25,20 @@ export async function handleQueueRequest(
       uuid,
       webhook_url, 
       content, 
-      created_time_ms
+      created_time
     )
     VALUES (
       $uuid,
       $webhookUrl, 
       $content, 
-      $createdTimeMs
+      $createdTime
     )
   `,
   ).run({
     uuid: crypto.randomUUID(),
     webhookUrl,
     content: message.content,
-    createdTimeMs: Date.now(),
+    createdTime: Math.floor(Date.now() / 1000),
   });
 
   return new Response(undefined, { status: 200 });
