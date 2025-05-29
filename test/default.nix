@@ -1,18 +1,5 @@
-{ pkgs }:
+{ pkgs, discord-webhook-dispatcher }:
 let
-
-  server =
-    src:
-    pkgs.runCommandLocal "server" { } ''
-      ${pkgs.bun}/bin/bun build ${../index.ts} \
-        --compile \
-        --minify \
-        --bytecode \
-        --sourcemap \
-        --outfile server
-      mkdir -p $out/bin
-      mv server $out/bin/server
-    '';
 
   mkTest =
     prefix: dir: name:
@@ -23,7 +10,7 @@ let
         pkgs.jwt-cli
         pkgs.curl
         pkgs.tinyxxd
-        server
+        discord-webhook-dispatcher
       ];
     } (builtins.readFile ./test.sh);
 

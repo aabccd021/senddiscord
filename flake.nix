@@ -11,12 +11,16 @@
 
       overlays.default = (final: prev: import ./overlay.nix { pkgs = final; });
 
-      pkgs = import inputs.nixpkgs {
-        system = "x86_64-linux";
-        overlays = [ overlays.default ];
+      pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
+
+      overlayPackages = import ./overlay.nix {
+        pkgs = pkgs;
       };
 
-      test = import ./test { pkgs = pkgs; };
+      test = import ./test {
+        pkgs = pkgs;
+        discord-webhook-dispatcher = overlayPackages.discord-webhook-dispatcher;
+      };
 
       treefmtEval = inputs.treefmt-nix.lib.evalModule pkgs {
         projectRootFile = "flake.nix";
@@ -78,13 +82,13 @@
         // test
         // scripts
         // inputPackages
+        // overlayPackages
         // {
           tests = pkgs.linkFarm "tests" test;
           formatting = treefmtEval.config.build.check self;
           formatter = formatter;
           typeCheck = typeCheck;
           lintCheck = lintCheck;
-          discord-webhook-dispatcher = pkgs.discord-webhook-dispatcher;
         };
 
     in
