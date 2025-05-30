@@ -45,9 +45,7 @@ async function main(): Promise<void> {
     CREATE TABLE IF NOT EXISTS webhook (
       url TEXT PRIMARY KEY,
       ratelimit_bucket TEXT NOT NULL,
-      is_processing INTEGER NOT NULL DEFAULT 0,
       CONSTRAINT ratelimit_bucket_fk FOREIGN KEY (ratelimit_bucket) REFERENCES ratelimit (bucket),
-      CONSTRAINT is_processing_boolean CHECK (is_processing IN (0, 1))
     ) STRICT;
 
     CREATE TABLE IF NOT EXISTS queue (

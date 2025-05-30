@@ -47,6 +47,7 @@ function setRateLimit({
     return;
   }
 
+  // TODO: make this a transaction
   db.query(
     `
     INSERT INTO ratelimit (bucket, reset_time, remaining)
@@ -115,14 +116,11 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
     FROM queue
     JOIN webhook ON queue.webhook_url = webhook.url
     LEFT JOIN ratelimit ON webhook.ratelimit_bucket = ratelimit.bucket
-    WHERE webhook.is_processing = 0
-      AND (ratelimit.bucket IS NULL OR ratelimit.is_processing = 0)
-  `);
-
-  const updateWebhook = db.query(`
-    UPDATE webhook
-    SET is_processing = 1
-    WHERE url = $webhookUrl
+    WHERE ratelimit.is_processing = 0
+      AND (
+        ratelimit.remaining > 0 
+        OR $now > ratelimit.reset_time
+      )
   `);
 
   const updateRatelimit = db.query(`
@@ -132,10 +130,9 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
   `);
 
   const transaction = db.transaction(() => {
-    const message = selectQueue.get();
+    const message = selectQueue.get({ now: Math.floor(Date.now() / 1000) });
     t.assert(message, MessageNullable);
     if (message != null) {
-      updateWebhook.run({ webhookUrl: message.webhookUrl });
       updateRatelimit.run({ bucket: message.ratelimitBucket });
     }
     return message;
@@ -151,11 +148,6 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
   try {
     await processDequeue(db, message);
   } finally {
-    db.query(
-      "UPDATE webhook SET is_processing = 0 WHERE url = $webhookUrl",
-    ).run({
-      webhookUrl: message.webhookUrl,
-    });
     db.query(
       "UPDATE ratelimit SET is_processing = 0 WHERE bucket = $bucket",
     ).run({
