@@ -1,6 +1,10 @@
 import type * as sqlite from "bun:sqlite";
 import * as t from "superstruct";
-import { logSleep, parseRateLimitHeader } from "./util.ts";
+import {
+  type ResponseWithBody,
+  logSleep,
+  parseRateLimitHeader,
+} from "./util.ts";
 
 const Message = t.object({
   uuid: t.string(),
@@ -23,10 +27,10 @@ function setRateLimit({
   db: sqlite.Database;
   message: Message;
   webhookUrl: string;
-  response: Response;
+  response: ResponseWithBody;
 }): void {
   const { remaining, resetTime, bucket } = parseRateLimitHeader(
-    response.headers,
+    response,
     webhookUrl,
   );
 
@@ -109,9 +113,24 @@ async function processDequeue(
     }),
   });
 
-  setRateLimit({ db, message, webhookUrl, response });
+  const jsonBody = await response.json();
 
-  db.query("DELETE FROM queue WHERE uuid = $uuid").run({ uuid: uuid });
+  setRateLimit({
+    db,
+    message,
+    webhookUrl,
+    response: {
+      status: response.status,
+      headers: response.headers,
+      jsonBody,
+    },
+  });
+
+  if (response.ok) {
+    db.query("DELETE FROM queue WHERE uuid = $uuid").run({ uuid: uuid });
+  } else {
+    console.error(`Failed to process message: ${response.status}`);
+  }
 }
 
 export async function dequeue(db: sqlite.Database): Promise<void> {
@@ -128,7 +147,7 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
     WHERE ratelimit.is_processing = 0
       AND (
         ratelimit.remaining > 0 
-        OR $now > ratelimit.reset_time
+        OR ratelimit.reset_time < $now
       )
   `);
 
@@ -138,8 +157,10 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
     WHERE bucket = $bucket
   `);
 
+  const now = Date.now();
+
   const transaction = db.transaction(() => {
-    const message = selectQueue.get({ now: Math.floor(Date.now() / 1000) });
+    const message = selectQueue.get({ now });
     t.assert(message, MessageNullable);
     if (message != null) {
       updateRatelimit.run({ bucket: message.ratelimitBucket });

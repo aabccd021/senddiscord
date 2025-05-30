@@ -7,7 +7,7 @@ import { logSleep } from "./util.ts";
 
 // TODO: concurrency
 // TODO: chunk 2000
-// TODO: retry
+// TODO: retry count for each message, if more than 10, ignore
 
 process.on("uncaughtException", (error) => {
   console.error("Uncaught Exception:", error);

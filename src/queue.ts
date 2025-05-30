@@ -20,14 +20,20 @@ async function insertWebhookIfAbsent(
 
   const response = await fetch(webhookUrl, { method: "POST" });
 
+  const jsonBody = await response.json();
+
   const { remaining, resetTime, bucket } = parseRateLimitHeader(
-    response.headers,
+    {
+      status: response.status,
+      headers: response.headers,
+      jsonBody,
+    },
     webhookUrl,
   );
 
   db.query(
     `
-    INSERT INTO ratelimit (bucket, reset_time, remaining) 
+    INSERT INTO ratelimit (bucket, reset_time, remaining)
     VALUES ($bucket, $resetTime, $remaining)
     ON CONFLICT(bucket) DO UPDATE SET 
       reset_time = $resetTime, 
@@ -82,7 +88,7 @@ export async function handleQueueRequest(
     uuid: crypto.randomUUID(),
     webhookUrl,
     content: message.content,
-    createdTime: Math.floor(Date.now() / 1000),
+    createdTime: Date.now(),
   });
   return new Response(undefined, { status: 200 });
 }
