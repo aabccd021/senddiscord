@@ -6,7 +6,7 @@ const Message = t.object({
   content: t.string(),
   webhookUrl: t.string(),
   createdTime: t.bigint(),
-  ratelimitBucket: t.nullable(t.string()),
+  ratelimitBucket: t.string(),
 });
 
 const MessageNullable = t.nullable(Message);
@@ -123,38 +123,26 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
   const updateWebhook = db.query(`
     UPDATE webhook
     SET is_processing = 1
-    WHERE url IN (
-      SELECT webhook.url
-      FROM webhook
-      LEFT JOIN ratelimit ON webhook.ratelimit_bucket = ratelimit.bucket
-      WHERE webhook.is_processing = 0
-        AND (ratelimit.bucket IS NULL OR ratelimit.is_processing = 0)
-    )
+    WHERE url = $webhookUrl
   `);
 
   const updateRatelimit = db.query(`
     UPDATE ratelimit
     SET is_processing = 1
-    WHERE bucket IN (
-      SELECT DISTINCT webhook.ratelimit_bucket
-      FROM webhook
-      JOIN ratelimit ON webhook.ratelimit_bucket = ratelimit.bucket
-      WHERE webhook.is_processing = 1
-        AND ratelimit.bucket IS NOT NULL
-    )
+    WHERE bucket = $bucket
   `);
 
   const transaction = db.transaction(() => {
-    const queueItems = selectQueue.get();
-    if (queueItems !== null) {
-      updateWebhook.run();
-      updateRatelimit.run();
+    const message = selectQueue.get();
+    t.assert(message, MessageNullable);
+    if (message != null) {
+      updateWebhook.run({ webhookUrl: message.webhookUrl });
+      updateRatelimit.run({ bucket: message.ratelimitBucket });
     }
-    return queueItems;
+    return message;
   });
 
   const message = transaction();
-  t.assert(message, MessageNullable);
 
   if (message === null) {
     console.log("Message not found, sleeping for 1 second...");
@@ -178,14 +166,12 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
       webhookUrl: message.webhookUrl,
     });
     console.log(db.query("SELECT * FROM webhook").all());
-    if (message.ratelimitBucket === null) {
-      db.query(
-        "UPDATE ratelimit SET is_processing = 0 WHERE bucket = $bucket",
-      ).run({
-        bucket: message.ratelimitBucket,
-      });
-      console.log(db.query("SELECT * FROM webhook").all());
-    }
+    db.query(
+      "UPDATE ratelimit SET is_processing = 0 WHERE bucket = $bucket",
+    ).run({
+      bucket: message.ratelimitBucket,
+    });
+    console.log(db.query("SELECT * FROM webhook").all());
     console.log(
       `Finally finished processing message with UUID: ${message.uuid}`,
     );
