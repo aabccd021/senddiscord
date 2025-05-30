@@ -1,4 +1,4 @@
-export function getRateLimitHeaders(
+export function parseRateLimitHeader(
   headers: Headers,
   webhookUrl: string,
 ): {
@@ -32,4 +32,8 @@ export function getRateLimitHeaders(
     remaining: Number.parseInt(remaining, 10),
     resetTime: Number.parseInt(resetTime, 10),
   };
+}
+
+export function logSleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

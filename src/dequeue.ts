@@ -1,6 +1,6 @@
 import type * as sqlite from "bun:sqlite";
 import * as t from "superstruct";
-import { getRateLimitHeaders } from "./util.ts";
+import { logSleep, parseRateLimitHeader } from "./util.ts";
 
 const Message = t.object({
   uuid: t.string(),
@@ -25,7 +25,7 @@ function setRateLimit({
   webhookUrl: string;
   response: Response;
 }): void {
-  const { remaining, resetTime, bucket } = getRateLimitHeaders(
+  const { remaining, resetTime, bucket } = parseRateLimitHeader(
     response.headers,
     webhookUrl,
   );
@@ -47,8 +47,7 @@ function setRateLimit({
     return;
   }
 
-  // TODO: make this a transaction
-  db.query(
+  const insertNewRatelimit = db.query(
     `
     INSERT INTO ratelimit (bucket, reset_time, remaining)
     VALUES ($bucket, $resetTime, $remaining)
@@ -56,24 +55,17 @@ function setRateLimit({
     reset_time = $resetTime, 
       remaining = $remaining
     `,
-  ).run({
-    bucket: bucket,
-    resetTime: resetTime,
-    remaining: remaining,
-  });
+  );
 
-  db.query(
+  const updateWebhook = db.query(
     `
     UPDATE webhook
     SET ratelimit_bucket = $bucket
     WHERE url = $webhookUrl
     `,
-  ).run({
-    bucket: bucket,
-    webhookUrl: webhookUrl,
-  });
+  );
 
-  db.query(
+  const deleteUnusedRatelimit = db.query(
     `
     DELETE FROM ratelimit
     WHERE bucket = $bucket
@@ -81,7 +73,24 @@ function setRateLimit({
       SELECT 1 FROM webhook WHERE ratelimit_bucket = $bucket
     )
     `,
-  ).run({ bucket: message.ratelimitBucket });
+  );
+
+  const transaction = db.transaction(() => {
+    insertNewRatelimit.run({
+      bucket: bucket,
+      resetTime: resetTime,
+      remaining: remaining,
+    });
+
+    updateWebhook.run({
+      bucket: bucket,
+      webhookUrl: webhookUrl,
+    });
+
+    deleteUnusedRatelimit.run({ bucket: message.ratelimitBucket });
+  });
+
+  transaction();
 }
 
 async function processDequeue(
@@ -139,9 +148,10 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
   });
 
   const message = transaction();
+  t.assert(message, MessageNullable);
 
   if (message === null) {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await logSleep(1000);
     return;
   }
 

@@ -1,6 +1,6 @@
 import type * as sqlite from "bun:sqlite";
 import * as t from "superstruct";
-import { getRateLimitHeaders } from "./util.ts";
+import { parseRateLimitHeader } from "./util.ts";
 
 const Message = t.object({
   content: t.string(),
@@ -20,7 +20,7 @@ async function insertWebhookIfAbsent(
 
   const response = await fetch(webhookUrl, { method: "POST" });
 
-  const { remaining, resetTime, bucket } = getRateLimitHeaders(
+  const { remaining, resetTime, bucket } = parseRateLimitHeader(
     response.headers,
     webhookUrl,
   );
