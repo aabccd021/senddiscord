@@ -34,11 +34,19 @@ async function main(): Promise<void> {
     PRAGMA synchronous = NORMAL;
     PRAGMA foreign_keys = ON;
 
-    CREATE TABLE IF NOT EXISTS rate_limit (
+    CREATE TABLE IF NOT EXISTS ratelimit (
       bucket TEXT PRIMARY KEY,
-      reset_time_epoch INTEGER NOT NULL,
+      reset_time INTEGER NOT NULL,
       remaining INTEGER NOT NULL,
-      is_processing INTEGER NOT NULL
+      is_processing INTEGER NOT NULL DEFAULT 0,
+      CONSTRAINT is_processing_boolean CHECK (is_processing IN (0, 1))
+    ) STRICT;
+
+    CREATE TABLE IF NOT EXISTS webhook (
+      url TEXT PRIMARY KEY,
+      ratelimit_bucket TEXT,
+      is_processing INTEGER NOT NULL DEFAULT 0,
+      CONSTRAINT ratelimit_bucket_fk FOREIGN KEY (ratelimit_bucket) REFERENCES ratelimit (bucket),
       CONSTRAINT is_processing_boolean CHECK (is_processing IN (0, 1))
     ) STRICT;
 
@@ -47,9 +55,8 @@ async function main(): Promise<void> {
       webhook_url TEXT NOT NULL,
       content TEXT NOT NULL,
       created_time INTEGER NOT NULL,
-      rate_limit_bucket TEXT,
       CONSTRAINT uuid_pk PRIMARY KEY (uuid),
-      CONSTRAINT rate_limit_bucket_fk FOREIGN KEY (rate_limit_bucket) REFERENCES rate_limit (bucket)
+      CONSTRAINT webhook_url_fk FOREIGN KEY (webhook_url) REFERENCES webhook (url)
     ) STRICT;
   `);
 
@@ -67,7 +74,12 @@ async function main(): Promise<void> {
   });
 
   while (running) {
-    await dequeue(db);
+    try {
+      await dequeue(db);
+    } catch (error) {
+      console.error("Fatal error in dequeue:", error);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
   }
 
   db.close();
