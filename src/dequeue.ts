@@ -59,42 +59,43 @@ function setRateLimit({
       remaining: remaining,
       bucket: headerRateLimitBucket,
     });
-  } else {
-    db.query(
-      `
-      INSERT INTO ratelimit (bucket, reset_time, remaining)
-      VALUES ($bucket, $resetTime, $remaining)
-      ON CONFLICT(bucket) DO UPDATE SET 
-        reset_time = $resetTime, 
-        remaining = $remaining
-      `,
-    ).run({
-      bucket: headerRateLimitBucket,
-      resetTime: resetTime,
-      remaining: remaining,
-    });
-
-    db.query(
-      `
-        UPDATE webhook
-        SET ratelimit_bucket = $bucket
-        WHERE url = $webhookUrl
-        `,
-    ).run({
-      bucket: headerRateLimitBucket,
-      webhookUrl: webhookUrl,
-    });
-
-    db.query(
-      `
-      DELETE FROM ratelimit
-      WHERE bucket = $bucket
-        AND NOT EXISTS (
-          SELECT 1 FROM webhook WHERE ratelimit_bucket = $bucket
-        )
-      `,
-    ).run({ bucket: message.ratelimitBucket });
+    return;
   }
+
+  db.query(
+    `
+    INSERT INTO ratelimit (bucket, reset_time, remaining)
+    VALUES ($bucket, $resetTime, $remaining)
+    ON CONFLICT(bucket) DO UPDATE SET 
+    reset_time = $resetTime, 
+      remaining = $remaining
+    `,
+  ).run({
+    bucket: headerRateLimitBucket,
+    resetTime: resetTime,
+    remaining: remaining,
+  });
+
+  db.query(
+    `
+    UPDATE webhook
+    SET ratelimit_bucket = $bucket
+    WHERE url = $webhookUrl
+    `,
+  ).run({
+    bucket: headerRateLimitBucket,
+    webhookUrl: webhookUrl,
+  });
+
+  db.query(
+    `
+    DELETE FROM ratelimit
+    WHERE bucket = $bucket
+    AND NOT EXISTS (
+      SELECT 1 FROM webhook WHERE ratelimit_bucket = $bucket
+    )
+    `,
+  ).run({ bucket: message.ratelimitBucket });
 }
 
 async function processDequeue(
