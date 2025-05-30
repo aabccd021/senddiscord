@@ -4,6 +4,8 @@ import { $ } from "bun";
 import { dequeue } from "./dequeue.ts";
 import { handleQueueRequest } from "./queue.ts";
 
+// TODO: concurrency
+
 process.on("uncaughtException", (error) => {
   console.error("Uncaught Exception:", error);
 });
@@ -74,7 +76,7 @@ async function main(): Promise<void> {
     ) STRICT;
   `);
 
-  Bun.serve({
+  const server = Bun.serve({
     fetch: (request: Request): Promise<Response> =>
       handleQueueRequest(db, request),
     unix: args.values.socket,
@@ -96,7 +98,8 @@ async function main(): Promise<void> {
     }
   }
 
-  db.close();
+  await server.stop();
+  db.close(true);
 
   process.exit(0);
 }
