@@ -1,10 +1,6 @@
 import type * as sqlite from "bun:sqlite";
 import * as t from "superstruct";
-import {
-  type ResponseWithBody,
-  logSleep,
-  parseRateLimitHeader,
-} from "./util.ts";
+import { type SyncResponse, logSleep, parseRateLimitHeader } from "./util.ts";
 
 const Message = t.object({
   uuid: t.string(),
@@ -27,7 +23,7 @@ function setRateLimit({
   db: sqlite.Database;
   message: Message;
   webhookUrl: string;
-  response: ResponseWithBody;
+  response: SyncResponse;
 }): void {
   const { resetTime, bucket } = parseRateLimitHeader(response, webhookUrl);
 

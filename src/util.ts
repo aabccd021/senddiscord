@@ -1,4 +1,4 @@
-function getBodyRetryAfter(response: ResponseWithBody): number | undefined {
+function getBodyRetryAfter(response: SyncResponse): number | undefined {
   if (
     response.status === 429 &&
     typeof response.jsonBody === "object" &&
@@ -12,7 +12,7 @@ function getBodyRetryAfter(response: ResponseWithBody): number | undefined {
   return undefined;
 }
 
-function getHeaderRetryAfter(response: ResponseWithBody): number | undefined {
+function getHeaderRetryAfter(response: SyncResponse): number | undefined {
   if (response.status !== 429) {
     return undefined;
   }
@@ -25,7 +25,7 @@ function getHeaderRetryAfter(response: ResponseWithBody): number | undefined {
   return Number.parseInt(retryAfterHeader, 10);
 }
 
-function getRatelimitResetAfter(response: ResponseWithBody): number {
+function getRatelimitResetAfter(response: SyncResponse): number {
   const remaining = response.headers.get("X-RateLimit-Remaining") ?? "0";
 
   // there is remaining tries, so wait 0 seconds
@@ -40,7 +40,7 @@ function getRatelimitResetAfter(response: ResponseWithBody): number {
 }
 
 export function parseRateLimitHeader(
-  response: ResponseWithBody,
+  response: SyncResponse,
   webhookUrl: string,
 ): {
   bucket: string;
@@ -78,7 +78,7 @@ export function logSleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export type ResponseWithBody = {
+export type SyncResponse = {
   readonly status: number;
   readonly headers: Headers;
   readonly jsonBody: unknown;
