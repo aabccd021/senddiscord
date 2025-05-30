@@ -1,5 +1,6 @@
 import type * as sqlite from "bun:sqlite";
 import * as t from "superstruct";
+import { getRateLimitHeaders } from "./util.ts";
 
 const Message = t.object({
   content: t.string(),
@@ -19,29 +20,11 @@ async function insertWebhookIfAbsent(
 
   const response = await fetch(webhookUrl, { method: "POST" });
 
-  const rateLimitBucket = response.headers.get("X-RateLimit-Bucket");
-  if (rateLimitBucket === null) {
-    throw new Error(
-      `Missing X-RateLimit-Bucket header in response from ${webhookUrl}`,
-    );
-  }
+  const { remaining, resetTime, bucket } = getRateLimitHeaders(
+    response.headers,
+    webhookUrl,
+  );
 
-  const rateLimitRemaining = response.headers.get("X-RateLimit-Remaining");
-  if (rateLimitRemaining === null) {
-    throw new Error(
-      `Missing X-RateLimit-Remaining header in response from ${webhookUrl}`,
-    );
-  }
-
-  const rateLimitResetTime = response.headers.get("X-RateLimit-Reset");
-  if (rateLimitResetTime === null) {
-    throw new Error(
-      `Missing X-RateLimit-Reset header in response from ${webhookUrl}`,
-    );
-  }
-
-  const resetTime = Number.parseInt(rateLimitResetTime, 10);
-  const remaining = Number.parseInt(rateLimitRemaining, 10);
   db.query(
     `
     INSERT INTO ratelimit (bucket, reset_time, remaining) 
@@ -51,7 +34,7 @@ async function insertWebhookIfAbsent(
       remaining = $remaining
     `,
   ).run({
-    bucket: rateLimitBucket,
+    bucket: bucket,
     resetTime: resetTime,
     remaining: remaining,
   });
@@ -60,7 +43,7 @@ async function insertWebhookIfAbsent(
     "INSERT INTO webhook (url, ratelimit_bucket) VALUES ($url, $bucket)",
   ).run({
     url: webhookUrl,
-    bucket: rateLimitBucket,
+    bucket: bucket,
   });
 }
 

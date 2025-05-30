@@ -1,5 +1,6 @@
 import type * as sqlite from "bun:sqlite";
 import * as t from "superstruct";
+import { getRateLimitHeaders } from "./util.ts";
 
 const Message = t.object({
   uuid: t.string(),
@@ -24,28 +25,12 @@ function setRateLimit({
   webhookUrl: string;
   response: Response;
 }): void {
-  const headerRateLimitBucket = response.headers.get("X-RateLimit-Bucket");
-  const rateLimitRemaining = response.headers.get("X-RateLimit-Remaining");
-  const rateLimitResetTime = response.headers.get("X-RateLimit-Reset");
-  if (
-    headerRateLimitBucket === null ||
-    rateLimitRemaining === null ||
-    rateLimitResetTime === null
-  ) {
-    console.warn(
-      `Anomaly: Missing rate limit headers: ${JSON.stringify({
-        rateLimitBucket: headerRateLimitBucket,
-        rateLimitRemaining,
-        rateLimitResetTime,
-      })}`,
-    );
-    return;
-  }
+  const { remaining, resetTime, bucket } = getRateLimitHeaders(
+    response.headers,
+    webhookUrl,
+  );
 
-  const resetTime = Number.parseInt(rateLimitResetTime, 10);
-  const remaining = Number.parseInt(rateLimitRemaining, 10);
-
-  if (message.ratelimitBucket === headerRateLimitBucket) {
+  if (message.ratelimitBucket === bucket) {
     db.query(
       `
       UPDATE ratelimit
@@ -57,7 +42,7 @@ function setRateLimit({
     ).run({
       resetTime: resetTime,
       remaining: remaining,
-      bucket: headerRateLimitBucket,
+      bucket: bucket,
     });
     return;
   }
@@ -71,7 +56,7 @@ function setRateLimit({
       remaining = $remaining
     `,
   ).run({
-    bucket: headerRateLimitBucket,
+    bucket: bucket,
     resetTime: resetTime,
     remaining: remaining,
   });
@@ -83,7 +68,7 @@ function setRateLimit({
     WHERE url = $webhookUrl
     `,
   ).run({
-    bucket: headerRateLimitBucket,
+    bucket: bucket,
     webhookUrl: webhookUrl,
   });
 
