@@ -1,6 +1,6 @@
 import type * as sqlite from "bun:sqlite";
 import * as t from "superstruct";
-import { type SyncResponse, logSleep, parseRateLimitHeader } from "./util.ts";
+import { type SyncResponse, parseRateLimitHeader } from "./util.ts";
 
 const Message = t.object({
   uuid: t.string(),
@@ -156,7 +156,7 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
   t.assert(message, MessageNullable);
 
   if (message === null) {
-    await logSleep(1000);
+    await Bun.sleep(1000);
     return;
   }
 

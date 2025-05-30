@@ -74,10 +74,6 @@ export function parseRateLimitHeader(
   };
 }
 
-export function logSleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 export type SyncResponse = {
   readonly status: number;
   readonly headers: Headers;

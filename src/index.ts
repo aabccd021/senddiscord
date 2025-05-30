@@ -3,7 +3,6 @@ import * as util from "node:util";
 import { $ } from "bun";
 import { dequeue } from "./dequeue.ts";
 import { handleQueueRequest } from "./queue.ts";
-import { logSleep } from "./util.ts";
 
 // TODO: concurrency
 // TODO: chunk 2000
@@ -97,7 +96,7 @@ async function main(): Promise<void> {
       await dequeue(db);
     } catch (error) {
       console.error("Fatal error in dequeue:", error);
-      await logSleep(1000);
+      await Bun.sleep(1000);
     }
   }
 
