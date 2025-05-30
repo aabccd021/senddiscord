@@ -4,6 +4,22 @@ import { $ } from "bun";
 import { dequeue } from "./dequeue.ts";
 import { handleQueueRequest } from "./queue.ts";
 
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception:", error);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+});
+
+process.on("uncaughtExceptionMonitor", (error) => {
+  console.error("Uncaught Exception Monitor:", error);
+});
+
+process.on("warning", (warning) => {
+  console.warn("Warning:", warning);
+});
+
 async function main(): Promise<void> {
   const args = util.parseArgs({
     args: process.argv.slice(2),
