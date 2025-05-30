@@ -24,17 +24,17 @@ function setRateLimit({
   webhookUrl: string;
   response: Response;
 }): void {
-  const rateLimitBucket = response.headers.get("X-RateLimit-Bucket");
+  const headerRateLimitBucket = response.headers.get("X-RateLimit-Bucket");
   const rateLimitRemaining = response.headers.get("X-RateLimit-Remaining");
   const rateLimitResetTime = response.headers.get("X-RateLimit-Reset");
   if (
-    rateLimitBucket === null ||
+    headerRateLimitBucket === null ||
     rateLimitRemaining === null ||
     rateLimitResetTime === null
   ) {
-    console.error(
+    console.warn(
       `Anomaly: Missing rate limit headers: ${JSON.stringify({
-        rateLimitBucket,
+        rateLimitBucket: headerRateLimitBucket,
         rateLimitRemaining,
         rateLimitResetTime,
       })}`,
@@ -45,7 +45,7 @@ function setRateLimit({
   const resetTime = Number.parseInt(rateLimitResetTime, 10);
   const remaining = Number.parseInt(rateLimitRemaining, 10);
 
-  if (message.ratelimitBucket === rateLimitBucket) {
+  if (message.ratelimitBucket === headerRateLimitBucket) {
     db.query(
       `
       UPDATE ratelimit
@@ -57,19 +57,23 @@ function setRateLimit({
     ).run({
       resetTime: resetTime,
       remaining: remaining,
-      bucket: rateLimitBucket,
+      bucket: headerRateLimitBucket,
     });
   } else {
     db.query(
       `
       INSERT INTO ratelimit (bucket, reset_time, remaining)
       VALUES ($bucket, $resetTime, $remaining)
+      ON CONFLICT(bucket) DO UPDATE SET 
+        reset_time = $resetTime, 
+        remaining = $remaining
       `,
     ).run({
-      bucket: rateLimitBucket,
+      bucket: headerRateLimitBucket,
       resetTime: resetTime,
       remaining: remaining,
     });
+
     db.query(
       `
         UPDATE webhook
@@ -77,9 +81,19 @@ function setRateLimit({
         WHERE url = $webhookUrl
         `,
     ).run({
-      bucket: rateLimitBucket,
+      bucket: headerRateLimitBucket,
       webhookUrl: webhookUrl,
     });
+
+    db.query(
+      `
+      DELETE FROM ratelimit
+      WHERE bucket = $bucket
+        AND NOT EXISTS (
+          SELECT 1 FROM webhook WHERE ratelimit_bucket = $bucket
+        )
+      `,
+    ).run({ bucket: message.ratelimitBucket });
   }
 }
 
@@ -87,7 +101,6 @@ async function processDequeue(
   db: sqlite.Database,
   message: Message,
 ): Promise<void> {
-  console.log(`Dequeuing message with UUID: ${message.uuid}`);
   const { uuid, webhookUrl, content } = message;
 
   const response = await fetch(webhookUrl, {
@@ -145,10 +158,6 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
   const message = transaction();
 
   if (message === null) {
-    console.log("Message not found, sleeping for 1 second...");
-    console.log(db.query("SELECT * FROM queue").all());
-    console.log(db.query("SELECT * FROM webhook").all());
-    console.log(db.query("SELECT * FROM ratelimit").all());
     await new Promise((resolve) => setTimeout(resolve, 2000));
     return;
   }
@@ -156,24 +165,15 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
   try {
     await processDequeue(db, message);
   } finally {
-    console.log({
-      webhookUrl: message.webhookUrl,
-      ratelimitBucket: message.ratelimitBucket,
-    });
     db.query(
       "UPDATE webhook SET is_processing = 0 WHERE url = $webhookUrl",
     ).run({
       webhookUrl: message.webhookUrl,
     });
-    console.log(db.query("SELECT * FROM webhook").all());
     db.query(
       "UPDATE ratelimit SET is_processing = 0 WHERE bucket = $bucket",
     ).run({
       bucket: message.ratelimitBucket,
     });
-    console.log(db.query("SELECT * FROM webhook").all());
-    console.log(
-      `Finally finished processing message with UUID: ${message.uuid}`,
-    );
   }
 }

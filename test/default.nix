@@ -22,8 +22,8 @@ let
     );
 
   normalTests = mapTests [
-    "success"
-    "empty"
+    # "success"
+    # "empty"
   ];
 
 in

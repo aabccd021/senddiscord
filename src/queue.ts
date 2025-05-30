@@ -18,6 +18,7 @@ async function insertWebhookIfAbsent(
   }
 
   const response = await fetch(webhookUrl, { method: "POST" });
+
   const rateLimitBucket = response.headers.get("X-RateLimit-Bucket");
   if (rateLimitBucket === null) {
     throw new Error(
@@ -25,38 +26,35 @@ async function insertWebhookIfAbsent(
     );
   }
 
-  const rateLimit = db
-    .query("SELECT bucket FROM ratelimit WHERE bucket = $bucket")
-    .get({ bucket: rateLimitBucket });
-
-  if (rateLimit === null) {
-    const rateLimitRemaining = response.headers.get("X-RateLimit-Remaining");
-    if (rateLimitRemaining === null) {
-      throw new Error(
-        `Missing X-RateLimit-Remaining header in response from ${webhookUrl}`,
-      );
-    }
-    const rateLimitResetTime = response.headers.get("X-RateLimit-Reset");
-    if (rateLimitResetTime === null) {
-      throw new Error(
-        `Missing X-RateLimit-Reset header in response from ${webhookUrl}`,
-      );
-    }
-    const resetTime = Number.parseInt(rateLimitResetTime, 10);
-    const remaining = Number.parseInt(rateLimitRemaining, 10);
-    db.query(
-      `
-        INSERT INTO ratelimit 
-          (bucket, reset_time, remaining) 
-        VALUES 
-          ($bucket, $resetTime, $remaining)
-      `,
-    ).run({
-      bucket: rateLimitBucket,
-      resetTime: resetTime,
-      remaining: remaining,
-    });
+  const rateLimitRemaining = response.headers.get("X-RateLimit-Remaining");
+  if (rateLimitRemaining === null) {
+    throw new Error(
+      `Missing X-RateLimit-Remaining header in response from ${webhookUrl}`,
+    );
   }
+
+  const rateLimitResetTime = response.headers.get("X-RateLimit-Reset");
+  if (rateLimitResetTime === null) {
+    throw new Error(
+      `Missing X-RateLimit-Reset header in response from ${webhookUrl}`,
+    );
+  }
+
+  const resetTime = Number.parseInt(rateLimitResetTime, 10);
+  const remaining = Number.parseInt(rateLimitRemaining, 10);
+  db.query(
+    `
+    INSERT INTO ratelimit (bucket, reset_time, remaining) 
+    VALUES ($bucket, $resetTime, $remaining)
+    ON CONFLICT(bucket) DO UPDATE SET 
+      reset_time = $resetTime, 
+      remaining = $remaining
+    `,
+  ).run({
+    bucket: rateLimitBucket,
+    resetTime: resetTime,
+    remaining: remaining,
+  });
 
   db.query(
     "INSERT INTO webhook (url, ratelimit_bucket) VALUES ($url, $bucket)",
@@ -70,7 +68,6 @@ export async function handleQueueRequest(
   db: sqlite.Database,
   request: Request,
 ): Promise<Response> {
-  console.log("Received request to enqueue message");
   const webhookUrl = request.headers.get("X-Discord-Webhook-Url");
   if (webhookUrl === null) {
     return new Response("Missing X-Discord-Webhook-Url header", {
@@ -104,9 +101,5 @@ export async function handleQueueRequest(
     content: message.content,
     createdTime: Math.floor(Date.now() / 1000),
   });
-
-  console.log(
-    `Enqueued message for webhook ${webhookUrl} with content: ${message.content}`,
-  );
   return new Response(undefined, { status: 200 });
 }
