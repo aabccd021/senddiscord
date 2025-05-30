@@ -26,49 +26,17 @@ function getHeaderRetryAfter(response: ResponseWithBody): number | undefined {
 }
 
 function getRatelimitResetAfter(response: ResponseWithBody): number {
-  const ratelimitResetAfter = response.headers.get("X-RateLimit-Reset-After");
-  if (ratelimitResetAfter === null) {
-    throw new Error("Missing X-RateLimit-Reset-After header in response");
+  const remaining = response.headers.get("X-RateLimit-Remaining") ?? "0";
+
+  // there is remaining tries, so wait 0 seconds
+  if (remaining !== "0") {
+    return 0;
   }
+
+  const ratelimitResetAfter =
+    response.headers.get("X-RateLimit-Reset-After") ?? "0";
 
   return Number.parseInt(ratelimitResetAfter, 10);
-}
-
-function getResetTimeAfter(response: ResponseWithBody): {
-  readonly resetTimeAfterSec: number;
-  readonly remaining: number;
-} {
-  const bodyRetryAfter = getBodyRetryAfter(response);
-  const headerRetryAfter = getHeaderRetryAfter(response);
-
-  // Do not send to same bucket more than once per 2 seconds
-  // This is a magic number based on experience
-  const minimumRetryAfter = 2;
-
-  const retryAfter = Math.max(
-    bodyRetryAfter ?? 0,
-    headerRetryAfter ?? 0,
-    minimumRetryAfter,
-  );
-
-  const ratelimitResetAfter = getRatelimitResetAfter(response);
-
-  if (retryAfter > ratelimitResetAfter) {
-    return {
-      resetTimeAfterSec: retryAfter,
-      remaining: 0,
-    };
-  }
-
-  const remaining = response.headers.get("X-RateLimit-Remaining");
-  if (remaining === null) {
-    throw new Error("Missing X-RateLimit-Remaining header in response");
-  }
-
-  return {
-    resetTimeAfterSec: ratelimitResetAfter,
-    remaining: Number.parseInt(remaining, 10),
-  };
 }
 
 export function parseRateLimitHeader(
@@ -76,7 +44,6 @@ export function parseRateLimitHeader(
   webhookUrl: string,
 ): {
   bucket: string;
-  remaining: number;
   resetTime: number;
 } {
   const bucket = response.headers.get("X-RateLimit-Bucket");
@@ -86,12 +53,24 @@ export function parseRateLimitHeader(
     );
   }
 
-  const { resetTimeAfterSec, remaining } = getResetTimeAfter(response);
+  const bodyRetryAfter = getBodyRetryAfter(response);
+  const headerRetryAfter = getHeaderRetryAfter(response);
+  const ratelimitResetAfter = getRatelimitResetAfter(response);
+
+  // Do not send to same bucket more than once per 2 seconds
+  // This is a magic number based on experience
+  const minimumRetryAfter = 2;
+
+  const resetTimeAfter = Math.max(
+    bodyRetryAfter ?? 0,
+    headerRetryAfter ?? 0,
+    ratelimitResetAfter,
+    minimumRetryAfter,
+  );
 
   return {
     bucket,
-    remaining,
-    resetTime: Math.ceil(Date.now() + resetTimeAfterSec * 1000),
+    resetTime: Math.ceil(Date.now() + resetTimeAfter * 1000),
   };
 }
 

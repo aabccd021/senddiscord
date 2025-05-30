@@ -22,7 +22,7 @@ async function insertWebhookIfAbsent(
 
   const jsonBody = await response.json();
 
-  const { remaining, resetTime, bucket } = parseRateLimitHeader(
+  const { resetTime, bucket } = parseRateLimitHeader(
     {
       status: response.status,
       headers: response.headers,
@@ -33,16 +33,13 @@ async function insertWebhookIfAbsent(
 
   db.query(
     `
-    INSERT INTO ratelimit (bucket, reset_time, remaining)
-    VALUES ($bucket, $resetTime, $remaining)
-    ON CONFLICT(bucket) DO UPDATE SET 
-      reset_time = $resetTime, 
-      remaining = $remaining
+    INSERT INTO ratelimit (bucket, reset_time)
+    VALUES ($bucket, $resetTime)
+    ON CONFLICT(bucket) DO UPDATE SET reset_time = $resetTime 
     `,
   ).run({
     bucket: bucket,
     resetTime: resetTime,
-    remaining: remaining,
   });
 
   db.query(

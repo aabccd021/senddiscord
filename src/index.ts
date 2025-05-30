@@ -58,7 +58,6 @@ async function main(): Promise<void> {
     CREATE TABLE IF NOT EXISTS ratelimit (
       bucket TEXT PRIMARY KEY,
       reset_time INTEGER NOT NULL,
-      remaining INTEGER NOT NULL,
       is_processing INTEGER NOT NULL DEFAULT 0,
       CONSTRAINT is_processing_boolean CHECK (is_processing IN (0, 1))
     ) STRICT;

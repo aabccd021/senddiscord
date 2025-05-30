@@ -29,23 +29,18 @@ function setRateLimit({
   webhookUrl: string;
   response: ResponseWithBody;
 }): void {
-  const { remaining, resetTime, bucket } = parseRateLimitHeader(
-    response,
-    webhookUrl,
-  );
+  const { resetTime, bucket } = parseRateLimitHeader(response, webhookUrl);
 
   if (message.ratelimitBucket === bucket) {
     db.query(
       `
       UPDATE ratelimit
       SET 
-        reset_time = $resetTime, 
-        remaining = $remaining
+        reset_time = $resetTime
       WHERE bucket = $bucket
       `,
     ).run({
       resetTime: resetTime,
-      remaining: remaining,
       bucket: bucket,
     });
     return;
@@ -53,11 +48,10 @@ function setRateLimit({
 
   const insertNewRatelimit = db.query(
     `
-    INSERT INTO ratelimit (bucket, reset_time, remaining)
-    VALUES ($bucket, $resetTime, $remaining)
+    INSERT INTO ratelimit (bucket, reset_time
+    VALUES ($bucket, $resetTime
     ON CONFLICT(bucket) DO UPDATE SET 
     reset_time = $resetTime, 
-      remaining = $remaining
     `,
   );
 
@@ -83,7 +77,6 @@ function setRateLimit({
     insertNewRatelimit.run({
       bucket: bucket,
       resetTime: resetTime,
-      remaining: remaining,
     });
 
     updateWebhook.run({
@@ -145,10 +138,7 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
     JOIN webhook ON queue.webhook_url = webhook.url
     LEFT JOIN ratelimit ON webhook.ratelimit_bucket = ratelimit.bucket
     WHERE ratelimit.is_processing = 0
-      AND (
-        ratelimit.remaining > 0 
-        OR ratelimit.reset_time < $now
-      )
+      AND ratelimit.reset_time < $now
   `);
 
   const updateRatelimit = db.query(`
