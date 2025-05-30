@@ -13,6 +13,76 @@ const MessageNullable = t.nullable(Message);
 
 type Message = t.Infer<typeof Message>;
 
+function setRateLimit({
+  db,
+  message,
+  webhookUrl,
+  response,
+}: {
+  db: sqlite.Database;
+  message: Message;
+  webhookUrl: string;
+  response: Response;
+}): void {
+  const rateLimitBucket = response.headers.get("X-RateLimit-Bucket");
+  const rateLimitRemaining = response.headers.get("X-RateLimit-Remaining");
+  const rateLimitResetTime = response.headers.get("X-RateLimit-Reset");
+  if (
+    rateLimitBucket === null ||
+    rateLimitRemaining === null ||
+    rateLimitResetTime === null
+  ) {
+    console.error(
+      `Anomaly: Missing rate limit headers: ${JSON.stringify({
+        rateLimitBucket,
+        rateLimitRemaining,
+        rateLimitResetTime,
+      })}`,
+    );
+    return;
+  }
+
+  const resetTime = Number.parseInt(rateLimitResetTime, 10);
+  const remaining = Number.parseInt(rateLimitRemaining, 10);
+
+  if (message.ratelimitBucket === rateLimitBucket) {
+    db.query(
+      `
+      UPDATE ratelimit
+      SET 
+        reset_time = $resetTime, 
+        remaining = $remaining
+      WHERE bucket = $bucket
+      `,
+    ).run({
+      resetTime: resetTime,
+      remaining: remaining,
+      bucket: rateLimitBucket,
+    });
+  } else {
+    db.query(
+      `
+      INSERT INTO ratelimit (bucket, reset_time, remaining)
+      VALUES ($bucket, $resetTime, $remaining)
+      `,
+    ).run({
+      bucket: rateLimitBucket,
+      resetTime: resetTime,
+      remaining: remaining,
+    });
+    db.query(
+      `
+        UPDATE webhook
+        SET ratelimit_bucket = $bucket
+        WHERE url = $webhookUrl
+        `,
+    ).run({
+      bucket: rateLimitBucket,
+      webhookUrl: webhookUrl,
+    });
+  }
+}
+
 async function processDequeue(
   db: sqlite.Database,
   message: Message,
@@ -30,67 +100,9 @@ async function processDequeue(
     }),
   });
 
-  const rateLimitBucket = response.headers.get("X-RateLimit-Bucket");
-  const rateLimitRemaining = response.headers.get("X-RateLimit-Remaining");
-  const rateLimitResetTime = response.headers.get("X-RateLimit-Reset");
-
-  if (
-    rateLimitBucket !== null &&
-    rateLimitRemaining !== null &&
-    rateLimitResetTime !== null
-  ) {
-    const resetTime = Number.parseInt(rateLimitResetTime, 10);
-    const remaining = Number.parseInt(rateLimitRemaining, 10);
-
-    if (message.ratelimitBucket === rateLimitBucket) {
-      db.query(
-        `
-      UPDATE ratelimit
-      SET 
-        reset_time_epoch = $resetTimeEpoch, 
-        remaining = $remaining
-      WHERE bucket = $bucket
-      `,
-      ).run({
-        resetTimeEpoch: resetTime,
-        remaining: remaining,
-        bucket: rateLimitBucket,
-      });
-    } else {
-      db.query(
-        `
-      INSERT INTO ratelimit (bucket, reset_time_epoch, remaining)
-      VALUES ($bucket, $resetTimeEpoch, $remaining)
-      `,
-      ).run({
-        bucket: rateLimitBucket,
-        resetTimeEpoch: resetTime,
-        remaining: remaining,
-      });
-      db.query(
-        `
-        UPDATE webhook
-        SET ratelimit_bucket = $bucket
-        WHERE url = $webhookUrl
-        `,
-      ).run({
-        bucket: rateLimitBucket,
-        webhookUrl: webhookUrl,
-      });
-    }
-  } else {
-    console.error(
-      `Anomaly: Missing rate limit headers: ${JSON.stringify({
-        rateLimitBucket,
-        rateLimitRemaining,
-        rateLimitResetTime,
-      })}`,
-    );
-  }
+  setRateLimit({ db, message, webhookUrl, response });
 
   db.query("DELETE FROM queue WHERE uuid = $uuid").run({ uuid: uuid });
-
-  console.log(response.headers);
 }
 
 export async function dequeue(db: sqlite.Database): Promise<void> {
@@ -149,7 +161,7 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
     console.log(db.query("SELECT * FROM queue").all());
     console.log(db.query("SELECT * FROM webhook").all());
     console.log(db.query("SELECT * FROM ratelimit").all());
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     return;
   }
 
