@@ -20,13 +20,11 @@ async function insertWebhookIfAbsent(
 
   const response = await fetch(webhookUrl, { method: "POST" });
 
-  const jsonBody = await response.json();
-
   const { resetTime, bucket } = parseRateLimitHeader(
     {
       status: response.status,
       headers: response.headers,
-      jsonBody,
+      jsonBody: await response.json(),
     },
     webhookUrl,
   );

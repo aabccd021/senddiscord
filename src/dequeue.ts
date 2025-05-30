@@ -102,8 +102,6 @@ async function processDequeue(
     }),
   });
 
-  const jsonBody = await response.json();
-
   setRateLimit({
     db,
     message,
@@ -111,7 +109,7 @@ async function processDequeue(
     response: {
       status: response.status,
       headers: response.headers,
-      jsonBody,
+      jsonBody: await response.json(),
     },
   });
 
