@@ -8,6 +8,7 @@ import { logSleep } from "./util.ts";
 // TODO: concurrency
 // TODO: chunk 2000
 // TODO: retry count for each message, if more than 10, ignore
+// TODO: select message from least recently processed ratelimit bucket
 
 process.on("uncaughtException", (error) => {
   console.error("Uncaught Exception:", error);
