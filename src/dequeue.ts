@@ -116,6 +116,9 @@ async function processDequeue(
   if (response.ok) {
     db.query("DELETE FROM queue WHERE uuid = $uuid").run({ uuid: uuid });
   } else {
+    db.query(
+      "UPDATE queue SET error_count = error_count + 1 WHERE uuid = $uuid",
+    );
     console.error(`Failed to process message: ${response.status}`);
   }
 }
@@ -133,6 +136,8 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
     LEFT JOIN ratelimit ON webhook.ratelimit_bucket = ratelimit.bucket
     WHERE ratelimit.is_processing = 0
       AND ratelimit.reset_time < $now
+      AND queue.error_count < 10
+    ORDER BY queue.error_count ASC, queue.created_time ASC
   `);
 
   const updateRatelimit = db.query(`

@@ -8,6 +8,7 @@ import { handleQueueRequest } from "./queue.ts";
 // TODO: chunk 2000
 // TODO: retry count for each message, if more than 10, ignore
 // TODO: select message from least recently processed ratelimit bucket
+// TODO; journald compatible logging
 
 process.on("uncaughtException", (error) => {
   console.error("Uncaught Exception:", error);
@@ -73,6 +74,7 @@ async function main(): Promise<void> {
       webhook_url TEXT NOT NULL,
       content TEXT NOT NULL,
       created_time INTEGER NOT NULL,
+      error_count INTEGER NOT NULL DEFAULT 0,
       CONSTRAINT uuid_pk PRIMARY KEY (uuid),
       CONSTRAINT webhook_url_fk FOREIGN KEY (webhook_url) REFERENCES webhook (url)
     ) STRICT;
