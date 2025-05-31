@@ -33,7 +33,7 @@ async function main(): Promise<void> {
       db: {
         type: "string",
         short: "d",
-        default: "/var/lib/discord-webhook-dispatcher/queue_db/db.sqlite",
+        default: "/var/lib/discord-webhook-dispatcher/message_db/db.sqlite",
         description: "Path to the SQLite database file.",
       },
       socket: {
@@ -69,7 +69,7 @@ async function main(): Promise<void> {
       CONSTRAINT ratelimit_bucket_fk FOREIGN KEY (ratelimit_bucket) REFERENCES ratelimit (bucket)
     ) STRICT;
 
-    CREATE TABLE IF NOT EXISTS queue (
+    CREATE TABLE IF NOT EXISTS message (
       uuid TEXT NOT NULL,
       webhook_url TEXT NOT NULL,
       content TEXT NOT NULL,

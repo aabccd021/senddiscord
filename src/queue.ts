@@ -66,7 +66,7 @@ export async function handleQueueRequest(
 
   db.query(
     `
-    INSERT INTO queue (
+    INSERT INTO message (
       uuid,
       webhook_url, 
       content, 

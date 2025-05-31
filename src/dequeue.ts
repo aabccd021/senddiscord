@@ -7,6 +7,7 @@ const Message = t.object({
   content: t.string(),
   webhookUrl: t.string(),
   createdTime: t.bigint(),
+  errorCount: t.bigint(),
   ratelimitBucket: t.string(),
 });
 
@@ -86,7 +87,7 @@ function setRateLimit({
   transaction();
 }
 
-async function processDequeue(
+async function dequeueMessage(
   db: sqlite.Database,
   message: Message,
 ): Promise<void> {
@@ -114,30 +115,31 @@ async function processDequeue(
   });
 
   if (response.ok) {
-    db.query("DELETE FROM queue WHERE uuid = $uuid").run({ uuid: uuid });
+    db.query("DELETE FROM message WHERE uuid = $uuid").run({ uuid: uuid });
   } else {
     db.query(
-      "UPDATE queue SET error_count = error_count + 1 WHERE uuid = $uuid",
+      "UPDATE message SET error_count = error_count + 1 WHERE uuid = $uuid",
     );
     console.error(`Failed to process message: ${response.status}`);
   }
 }
 
 export async function dequeue(db: sqlite.Database): Promise<void> {
-  const selectQueue = db.query(`
+  const selectMessage = db.query(`
     SELECT 
-      queue.uuid,
-      queue.webhook_url AS webhookUrl,
-      queue.content,
-      queue.created_time AS createdTime,
+      message.uuid,
+      message.webhook_url AS webhookUrl,
+      message.content,
+      message.created_time AS createdTime,
+      message.error_count AS errorCount,
       ratelimit.bucket AS ratelimitBucket
-    FROM queue
-    JOIN webhook ON queue.webhook_url = webhook.url
+    FROM message
+    JOIN webhook ON message.webhook_url = webhook.url
     LEFT JOIN ratelimit ON webhook.ratelimit_bucket = ratelimit.bucket
     WHERE ratelimit.is_processing = 0
       AND ratelimit.reset_time < $now
-      AND queue.error_count < 10
-    ORDER BY queue.error_count ASC, queue.created_time ASC
+      AND message.error_count < 10
+    ORDER BY message.error_count ASC, message.created_time ASC
   `);
 
   const updateRatelimit = db.query(`
@@ -149,7 +151,7 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
   const now = Date.now();
 
   const transaction = db.transaction(() => {
-    const message = selectQueue.get({ now });
+    const message = selectMessage.get({ now });
     t.assert(message, MessageNullable);
     if (message != null) {
       updateRatelimit.run({ bucket: message.ratelimitBucket });
@@ -166,7 +168,7 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
   }
 
   try {
-    await processDequeue(db, message);
+    await dequeueMessage(db, message);
   } finally {
     db.query(
       "UPDATE ratelimit SET is_processing = 0 WHERE bucket = $bucket",
