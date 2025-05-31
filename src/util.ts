@@ -59,7 +59,7 @@ export function parseRateLimitHeader(
 
   // Do not send to same bucket more than once per 2 seconds
   // This is a magic number based on experience
-  const minimumRetryAfter = 0;
+  const minimumRetryAfter = 2;
 
   const resetTimeAfter = Math.max(
     bodyRetryAfter ?? 0,
