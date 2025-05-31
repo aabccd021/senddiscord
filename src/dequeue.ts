@@ -102,6 +102,8 @@ async function dequeueMessage(
     }),
   });
 
+  const jsonBody = await response.json();
+
   setRateLimit({
     db,
     message,
@@ -109,7 +111,7 @@ async function dequeueMessage(
     response: {
       status: response.status,
       headers: response.headers,
-      jsonBody: await response.json(),
+      jsonBody,
     },
   });
 
@@ -119,7 +121,15 @@ async function dequeueMessage(
     db.query(
       "UPDATE message SET error_count = error_count + 1 WHERE uuid = $uuid",
     );
-    console.error(`Failed to process message: ${response.status}`);
+    console.error(
+      [
+        "Failed to process message",
+        `UUID: ${uuid}`,
+        `Status: ${response.status}`,
+        `Headers: ${JSON.stringify(response.headers)}`,
+        `Body: ${JSON.stringify(jsonBody)}`,
+      ].join(" "),
+    );
   }
 }
 
