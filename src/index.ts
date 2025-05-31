@@ -6,7 +6,6 @@ import { handleQueueRequest } from "./queue.ts";
 
 // TODO: concurrency
 // TODO: chunk 2000
-// TODO: retry count for each message, if more than 10, ignore
 // TODO: select message from least recently processed ratelimit bucket
 // TODO; journald compatible logging
 
