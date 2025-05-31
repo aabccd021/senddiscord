@@ -7,7 +7,6 @@ const Message = t.object({
   content: t.string(),
   webhookUrl: t.string(),
   createdTime: t.bigint(),
-  errorCount: t.bigint(),
   ratelimitBucket: t.string(),
 });
 
@@ -131,7 +130,6 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
       message.webhook_url AS webhookUrl,
       message.content,
       message.created_time AS createdTime,
-      message.error_count AS errorCount,
       ratelimit.bucket AS ratelimitBucket
     FROM message
     JOIN webhook ON message.webhook_url = webhook.url
