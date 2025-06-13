@@ -1,3 +1,7 @@
+yellow='\033[33m'
+blue='\033[34m'
+reset='\033[0m'
+
 NOTIFY_SOCKET="$PWD/notify.sock"
 export NOTIFY_SOCKET
 
@@ -8,9 +12,7 @@ systemd-notify-fifo-server \
 cat ./systemd_notify_ready.fifo
 
 mkfifo ./server.fifo
-while IFS= read -r line; do
-  printf '\033[34mserver\033[0m> %s\n' "$line"
-done <./server.fifo &
+sed "s/^/${blue}[server]${reset} /" ./server.fifo &
 
 # direct pipe will not forward signals to the server, so we use a fifo
 discord-webhook-dispatcher \
@@ -26,9 +28,7 @@ while true; do
   fi
 done
 
-bash -euo pipefail "$TEST_FILE" 2>&1 | while IFS= read -r line; do
-  printf '\033[33m[test]\033[0m %s\n' "$line"
-done
+bash -euo pipefail "$TEST_FILE" 2>&1 | sed "s/^/${yellow}[test]${reset} /"
 
 # simulate systemctl stop
 kill -SIGTERM "$server_pid"
