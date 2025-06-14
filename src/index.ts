@@ -6,7 +6,7 @@ import { handleQueueRequest } from "./queue.ts";
 
 // TODO: concurrency
 // TODO: chunk 2000
-// TODO; journald compatible logging
+// TODO; journald compatible logging with prefix like <3> or <6>
 
 process.on("uncaughtException", (error) => {
   console.error("Uncaught Exception:", error);
