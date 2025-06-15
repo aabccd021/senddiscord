@@ -13,9 +13,7 @@ curl \
 
 sleep 5
 
-request_files=$(ls ./requests)
-
-for file in $request_files; do
+for file in $(ls ./requests); do
   content=$(jq --raw-output '.content' "./requests/$file")
   if [ "$content" != "hello" ]; then
     echo "File :$file. Content: $content"
