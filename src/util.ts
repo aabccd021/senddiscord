@@ -68,8 +68,8 @@ export function parseRateLimitHeader(
     minimumRetryAfter,
   );
 
-  // Don't wait more than 24 hours
-  const resetTimeAfterCapped = Math.min(resetTimeAfter, 24 * 60 * 60);
+  // Don't wait more than 30 minutes
+  const resetTimeAfterCapped = Math.min(resetTimeAfter, 30 * 60);
 
   return {
     bucket,
