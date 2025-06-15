@@ -101,7 +101,7 @@ async function main(): Promise<void> {
   }
 
   await server.stop();
-  db.close(true);
+  db.close();
 
   process.exit(0);
 }

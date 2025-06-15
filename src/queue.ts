@@ -85,5 +85,6 @@ export async function handleQueueRequest(
     content: message.content,
     createdTime: Date.now(),
   });
+
   return new Response(undefined, { status: 200 });
 }

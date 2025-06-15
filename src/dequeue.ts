@@ -91,7 +91,6 @@ async function dequeueMessage(
   message: Message,
 ): Promise<void> {
   const { uuid, webhookUrl, content } = message;
-
   const response = await fetch(webhookUrl, {
     method: "POST",
     headers: {

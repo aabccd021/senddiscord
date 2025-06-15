@@ -1,6 +1,17 @@
 { pkgs, discord-webhook-dispatcher }:
 let
 
+  testServer = pkgs.runCommandLocal "test-server" { } ''
+    ${pkgs.bun}/bin/bun build ${./mock-discord-webhook.ts} \
+      --compile \
+      --minify \
+      --sourcemap \
+      --bytecode \
+      --outfile program
+    mkdir -p "$out/bin"
+    mv program "$out/bin/mock-discord-webhook"
+  '';
+
   mkTest =
     name:
     pkgs.runCommandLocal "test-${name}" {
@@ -8,6 +19,8 @@ let
       buildInputs = [
         pkgs.curl
         pkgs.systemd-notify-fifo-server
+        pkgs.jq
+        testServer
         discord-webhook-dispatcher
       ];
     } (builtins.readFile ./test.sh);
@@ -22,7 +35,7 @@ let
     );
 
   normalTests = mapTests [
-    # "success"
+    "success"
     # "empty"
   ];
 

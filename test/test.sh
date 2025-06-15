@@ -1,6 +1,7 @@
-yellow='\033[33m'
-blue='\033[34m'
-reset='\033[0m'
+yellow=$(printf '\033[33m')
+blue=$(printf '\033[34m')
+cyan=$(printf '\033[36m')
+reset=$(printf '\033[0m')
 
 NOTIFY_SOCKET="$PWD/notify.sock"
 export NOTIFY_SOCKET
@@ -10,6 +11,11 @@ systemd-notify-fifo-server \
   -out ./systemd_notify.fifo \
   -ready ./systemd_notify_ready.fifo &
 cat ./systemd_notify_ready.fifo
+
+mkfifo ./discord.fifo
+sed "s/^/${cyan}[discord]${reset} /" ./discord.fifo &
+
+mock-discord-webhook 2>&1 >discord.fifo &
 
 mkfifo ./server.fifo
 sed "s/^/${blue}[server]${reset} /" ./server.fifo &
