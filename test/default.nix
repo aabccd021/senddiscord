@@ -38,6 +38,7 @@ let
     "success-4"
     "success-3"
     "reset-after-1-success"
+    "remaining-positive"
   ];
 
 in
