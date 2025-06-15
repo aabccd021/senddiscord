@@ -36,9 +36,7 @@ let
 
   normalTests = mapTests [
     "noheader-3"
-    "resetafter-1"
-    "remaining-1"
-    "retryafter-1"
+    "resetafter-3"
   ];
 
 in

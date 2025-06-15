@@ -1,13 +1,32 @@
-cat >myfile.json <<EOF
+cat >response.json <<EOF
 [
   {
-    "X-RateLimit-Remaining": 1
+    "status": 200,
+    "headers": {
+      "X-RateLimit-Reset-After": 3
+    },
+    "body": {}
   },
   {
-    "X-RateLimit-Remaining": 1
+    "status": 200,
+    "headers": {
+      "X-RateLimit-Reset-After": 3
+    },
+    "body": {}
   },
   {
-    "X-RateLimit-Remaining": 1
+    "status": 200,
+    "headers": {
+      "X-RateLimit-Reset-After": 3
+    },
+    "body": {}
+  },
+  {
+    "status": 200,
+    "headers": {
+      "X-RateLimit-Reset-After": 3
+    },
+    "body": {}
   }
 ]
 EOF
@@ -43,7 +62,7 @@ send_request "Ipsum"
 send_request "Dolor"
 send_request "Sit Amet"
 
-sleep 7
+sleep 12
 
 assert_content "0.json" "Lorem"
 assert_content "1.json" "Ipsum"

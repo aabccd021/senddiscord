@@ -1,53 +1,53 @@
 let counter = -1;
 
-async function initHeaderList(): Promise<Record<string, string>[]> {
-  if (!(await Bun.file("headers.json").exists())) {
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+let responseList: any[] | null = null;
+
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+async function getResponseList(): Promise<any[]> {
+  if (responseList !== null) {
+    return responseList;
+  }
+  const responseFile = Bun.file("response.json");
+  if (!(await responseFile.exists())) {
     return [];
   }
-  const headersList = JSON.parse(await Bun.file("headers.json").text());
 
-  if (!Array.isArray(headersList)) {
-    throw new Error("headers.json must be an array");
+  const responseListJson = await responseFile.json();
+
+  if (!Array.isArray(responseListJson)) {
+    throw new Error("response.json must be an array");
   }
 
-  const headers: Record<string, string>[] = [];
-  for (const headersObj of headersList) {
-    if (typeof headersObj !== "object") {
-      throw new Error("Each header in headers.json must be an object");
-    }
-    if (headersObj === null) {
-      throw new Error("Each header in headers.json must not be null");
-    }
+  responseList = responseListJson;
 
-    const header: Record<string, string> = {};
-    for (const [key, value] of Object.entries(headersObj)) {
-      if (typeof value !== "string") {
-        throw new Error(`Header value for ${key} must be a string`);
-      }
-      header[key] = value;
-    }
+  return responseListJson;
+}
 
-    headers.push(header);
-  }
-
-  return headers;
+async function createResponse(): Promise<Response> {
+  const resps = await getResponseList();
+  const response = resps.pop() ?? {
+    status: 200,
+    headers: {},
+    body: {},
+  };
+  const init = {
+    status: response.status,
+    headers: {
+      ...response.headers,
+      "Content-Type": "application/json",
+      "X-RateLimit-Bucket": "default",
+    },
+  };
+  return new Response(JSON.stringify(response.body), init);
 }
 
 async function main(): Promise<void> {
-  const headersList = await initHeaderList();
-
   Bun.serve({
     port: 3000,
     fetch: async (request: Request): Promise<Response> => {
       if (request.body === null) {
-        return new Response(JSON.stringify({}), {
-          status: 200,
-          headers: {
-            "Content-Type": "application/json",
-            "X-RateLimit-Bucket": "default",
-            ...headersList.pop(),
-          },
-        });
+        return createResponse();
       }
 
       const body = await request.json();
@@ -74,14 +74,7 @@ async function main(): Promise<void> {
         JSON.stringify(body, null, 2),
       );
 
-      return new Response(JSON.stringify({}), {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "X-RateLimit-Bucket": "default",
-          ...headersList.pop(),
-        },
-      });
+      return createResponse();
     },
   });
 
@@ -91,10 +84,10 @@ async function main(): Promise<void> {
     });
   });
 
-  if (headersList.length > 0) {
+  if (responseList !== null && responseList.length > 0) {
     console.error(
-      `Not all headers were used, ${headersList.length} headers left:`,
-      headersList,
+      `Not all headers were used, ${responseList.length} headers left:`,
+      responseList,
     );
     process.exit(1);
   }
