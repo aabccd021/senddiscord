@@ -35,7 +35,8 @@ let
     );
 
   normalTests = mapTests [
-    "success"
+    "success-4"
+    "success-3"
     # "empty"
   ];
 
