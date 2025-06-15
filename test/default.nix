@@ -39,6 +39,7 @@ let
     "success-3"
     "reset-after-1-success"
     "remaining-positive"
+    "retry-after-1-success"
   ];
 
 in
