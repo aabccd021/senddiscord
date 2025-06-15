@@ -35,10 +35,10 @@ let
     );
 
   normalTests = mapTests [
-    "success-3"
-    "reset-after-1-success"
-    "remaining-positive"
-    "retry-after-1-success"
+    "noheader-3"
+    "resetafter-1"
+    "remaining-1"
+    "retryafter-1"
   ];
 
 in
