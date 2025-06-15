@@ -35,8 +35,12 @@ let
     );
 
   normalTests = mapTests [
+    "noheader-2"
     "noheader-3"
+    "noheader-4"
+    "resetafter-2"
     "resetafter-3"
+    "resetafter-4"
   ];
 
 in

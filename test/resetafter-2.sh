@@ -1,3 +1,29 @@
+cat >response.json <<EOF
+[
+  {
+    "status": 200,
+    "headers": {
+      "X-RateLimit-Reset-After": 3
+    },
+    "body": {}
+  },
+  {
+    "status": 200,
+    "headers": {
+      "X-RateLimit-Reset-After": 3
+    },
+    "body": {}
+  },
+  {
+    "status": 200,
+    "headers": {
+      "X-RateLimit-Reset-After": 3
+    },
+    "body": {}
+  }
+]
+EOF
+
 send_request() {
   content="$1"
   curl \
@@ -29,13 +55,12 @@ send_request "Ipsum"
 send_request "Dolor"
 send_request "Sit Amet"
 
-sleep 7.5
+sleep 9.5
 
 assert_content "0.json" "Lorem"
 assert_content "1.json" "Ipsum"
-assert_content "2.json" "Dolor"
 
-if [ -f "./requests/3.json" ]; then
-  echo "File 3.json should not exist"
+if [ -f "./requests/2.json" ]; then
+  echo "File 2.json should not exist"
   exit 1
 fi
