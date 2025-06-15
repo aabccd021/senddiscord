@@ -1,3 +1,5 @@
+let counter = -1;
+
 Bun.serve({
   port: 3000,
   fetch: async (request: Request): Promise<Response> => {
@@ -29,7 +31,11 @@ Bun.serve({
       throw new Error("'content' field is not a string");
     }
 
-    await Bun.write("request.json", JSON.stringify(body, null, 2));
+    counter += 1;
+    await Bun.write(
+      `requests/req-${counter}.json`,
+      JSON.stringify(body, null, 2),
+    );
 
     return new Response(JSON.stringify({}), {
       status: 200,

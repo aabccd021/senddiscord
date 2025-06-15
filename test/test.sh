@@ -6,6 +6,8 @@ reset=$(printf '\033[0m')
 NOTIFY_SOCKET="$PWD/notify.sock"
 export NOTIFY_SOCKET
 
+mkdir requests
+
 mkfifo ./systemd_notify_ready.fifo
 systemd-notify-fifo-server \
   -out ./systemd_notify.fifo \

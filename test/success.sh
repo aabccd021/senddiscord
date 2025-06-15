@@ -13,9 +13,11 @@ curl \
 
 sleep 5
 
-cat ./request.json
+request_files=$(ls ./requests)
 
-content=$(jq --raw-output '.content' ./request.json)
-if [ "$content" != "hello" ]; then
-  echo "Expected content 'hello', got '$content'"
-fi
+for file in $request_files; do
+  content=$(jq --raw-output '.content' "./requests/$file")
+  if [ "$content" != "hello" ]; then
+    echo "File :$file. Content: $content"
+  fi
+done
