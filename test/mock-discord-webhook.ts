@@ -84,6 +84,22 @@ async function main(): Promise<void> {
       });
     },
   });
+
+  await new Promise((resolve) => {
+    process.on("SIGTERM", () => {
+      resolve(undefined);
+    });
+  });
+
+  if (headersList.length > 0) {
+    console.error(
+      `Not all headers were used, ${headersList.length} headers left:`,
+      headersList,
+    );
+    process.exit(1);
+  }
+
+  process.exit(0);
 }
 
 main();

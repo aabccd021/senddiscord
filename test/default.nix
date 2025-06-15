@@ -37,7 +37,7 @@ let
   normalTests = mapTests [
     "success-4"
     "success-3"
-    # "empty"
+    "reset-after-1-success"
   ];
 
 in

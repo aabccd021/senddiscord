@@ -18,6 +18,7 @@ mkfifo ./discord.fifo
 sed "s/^/${cyan}[discord]${reset} /" ./discord.fifo &
 
 mock-discord-webhook 2>&1 >discord.fifo &
+mock_discord_pid=$!
 
 mkfifo ./server.fifo
 sed "s/^/${blue}[server]${reset} /" ./server.fifo &
@@ -41,5 +42,8 @@ bash -euo pipefail "$TEST_FILE" 2>&1 | sed "s/^/${yellow}[test]${reset} /"
 # simulate systemctl stop
 kill -SIGTERM "$server_pid"
 wait "$server_pid"
+
+kill -SIGTERM "$mock_discord_pid"
+wait "$mock_discord_pid"
 
 mkdir "$out"
