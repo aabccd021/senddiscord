@@ -32,10 +32,7 @@ Bun.serve({
     }
 
     counter += 1;
-    await Bun.write(
-      `requests/req-${counter}.json`,
-      JSON.stringify(body, null, 2),
-    );
+    await Bun.write(`requests/${counter}.json`, JSON.stringify(body, null, 2));
 
     return new Response(JSON.stringify({}), {
       status: 200,

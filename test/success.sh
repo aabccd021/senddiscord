@@ -1,21 +1,37 @@
-curl \
-  --request POST \
-  --url http://localhost/ \
-  --unix-socket ./server.sock \
-  --silent \
-  --show-error \
-  --fail \
-  --header 'Content-Type: application/json' \
-  --header 'X-Discord-Webhook-Url: http://localhost:3000' \
-  --data '{
-    "content": "hello"
-  }'
+send_request() {
+  content="$1"
+  curl \
+    --request POST \
+    --url http://localhost/ \
+    --unix-socket ./server.sock \
+    --silent \
+    --show-error \
+    --fail \
+    --header 'Content-Type: application/json' \
+    --header 'X-Discord-Webhook-Url: http://localhost:3000' \
+    --data "{
+      \"content\": \"$content\"
+    }"
+}
 
-sleep 5
-
-for file in $(ls ./requests); do
+assert_content() {
+  file="$1"
+  expected="$2"
   content=$(jq --raw-output '.content' "./requests/$file")
-  if [ "$content" != "hello" ]; then
+  if [ "$content" != "$expected" ]; then
     echo "File :$file. Content: $content"
+    exit 1
   fi
-done
+}
+
+send_request "Lorem"
+send_request "Ipsum"
+send_request "Dolor"
+send_request "Sit Amet"
+
+sleep 10
+
+assert_content "0.json" "Lorem"
+assert_content "1.json" "Ipsum"
+assert_content "2.json" "Dolor"
+assert_content "3.json" "Sit Amet"
