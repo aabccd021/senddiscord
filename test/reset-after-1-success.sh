@@ -1,13 +1,16 @@
 cat >myfile.json <<EOF
 [
   {
-    "X-RateLimit-Reset-After": 1
+    "X-RateLimit-Reset-After": 1,
+    "X-RateLimit-Remaining": 0
   },
   {
-    "X-RateLimit-Reset-After": 1
+    "X-RateLimit-Reset-After": 1,
+    "X-RateLimit-Remaining": 0
   },
   {
-    "X-RateLimit-Reset-After": 1
+    "X-RateLimit-Reset-After": 1,
+    "X-RateLimit-Remaining": 0
   }
 ]
 EOF
