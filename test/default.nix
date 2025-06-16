@@ -1,4 +1,4 @@
-{ pkgs, discord-webhook-dispatcher }:
+{ pkgs, discord-sendmail }:
 let
 
   testServer = pkgs.runCommandLocal "test-server" { } ''
@@ -21,7 +21,7 @@ let
         pkgs.systemd-notify-fifo-server
         pkgs.jq
         testServer
-        discord-webhook-dispatcher
+        discord-sendmail
       ];
     } (builtins.readFile ./test.sh);
 

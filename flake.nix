@@ -24,12 +24,17 @@
         );
 
       overlays.default = (
-        final: prev:
-        import ./overlay.nix {
-          pkgs = final;
-          inputs = inputs;
+        final: prev: {
+          discord-sendmail = import ./package.nix {
+            pkgs = final;
+            inputs = inputs;
+          };
         }
       );
+
+      nixosModules.default = import ./nixosModules.nix {
+        inputs = inputs;
+      };
 
       pkgs = import inputs.nixpkgs {
         system = "x86_64-linux";
@@ -38,14 +43,14 @@
         ];
       };
 
-      overlayPackages = import ./overlay.nix {
+      discord-sendmail = import ./package.nix {
         pkgs = pkgs;
         inputs = inputs;
       };
 
       test = import ./test {
         pkgs = pkgs;
-        discord-webhook-dispatcher = overlayPackages.discord-webhook-dispatcher;
+        discord-sendmail = discord-sendmail;
       };
 
       treefmtEval = inputs.treefmt-nix.lib.evalModule pkgs {
@@ -108,8 +113,8 @@
         // test
         // scripts
         // inputPackages
-        // overlayPackages
         // {
+          discord-sendmail = discord-sendmail;
           tests = pkgs.linkFarm "tests" test;
           formatting = treefmtEval.config.build.check self;
           formatter = formatter;
@@ -131,6 +136,7 @@
       devShells.x86_64-linux = devShells;
 
       overlays = overlays;
+      nixosModules = nixosModules;
 
     };
 }

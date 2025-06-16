@@ -19,16 +19,13 @@ let
   '';
 
 in
-{
 
-  discord-webhook-dispatcher = pkgs.writeShellApplication {
-    name = "discord-webhook-dispatcher";
-    runtimeInputs = [
-      pkgs.systemd
-    ];
-    text = ''
-      exec ${server}/bin/discord-webhook-dispatcher "$@"
-    '';
-  };
-
+pkgs.writeShellApplication {
+  name = "discord-webhook-dispatcher";
+  runtimeInputs = [
+    pkgs.systemd
+  ];
+  text = ''
+    exec ${server}/bin/discord-webhook-dispatcher "$@"
+  '';
 }
