@@ -17,7 +17,7 @@ done
 
 curl \
   --request POST \
-  --url http://localhost:3000/ \
+  --url http://localhost:13000/ \
   --silent \
   --show-error \
   --fail \

@@ -36,7 +36,7 @@ async function main(): Promise<void> {
       port: {
         type: "string",
         short: "p",
-        default: "3000",
+        default: "13000",
       },
     },
   });
