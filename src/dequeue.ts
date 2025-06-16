@@ -174,10 +174,10 @@ async function sendMessage(
   });
 
   if (response.ok && remaining !== undefined) {
-    const deleteUuids = new Set(uuids);
-    deleteUuids.delete(remaining.uuid);
-    for (const uuid of deleteUuids) {
-      db.query("DELETE FROM message WHERE uuid = $uuid").run({ uuid });
+    for (const uuid of new Set(uuids)) {
+      if (uuid !== remaining.uuid) {
+        db.query("DELETE FROM message WHERE uuid = $uuid").run({ uuid });
+      }
     }
 
     db.query(
