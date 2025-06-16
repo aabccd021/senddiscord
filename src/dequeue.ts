@@ -192,11 +192,9 @@ async function sendMessage(
   db.query(
     `
       UPDATE message 
-      SET 
-        content = $content,
-        is_processing = 0
+      SET content = $content
       WHERE uuid = $uuid
-      `,
+    `,
   ).run({
     content: remaining.content,
     uuid: remaining.uuid,
@@ -311,16 +309,28 @@ ORDER BY message.error_count ASC, message.created_time ASC
       accContent,
       remaining,
     );
-  } finally {
+  } catch (err) {
     for (const uuid of uuids) {
-      db.query(`
+      db.query(
+        `
       UPDATE message 
       SET 
-        error_count = error_count + 1,
-        is_processing = 0
+        is_processing = 0,
+        error_count = error_count + 1
       WHERE uuid = $uuid
-    `);
-      console.error(`Failed to process message. UUID: ${uuid}`);
+    `,
+      ).run({ uuid });
+    }
+    throw err;
+  } finally {
+    for (const uuid of uuids) {
+      db.query(
+        `
+      UPDATE message 
+      SET is_processing = 0
+      WHERE uuid = $uuid
+    `,
+      ).run({ uuid });
     }
   }
 }
