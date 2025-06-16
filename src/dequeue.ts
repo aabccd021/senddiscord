@@ -173,11 +173,15 @@ async function sendMessage(
     },
   });
 
-  if (response.ok && remaining !== undefined) {
+  if (response.ok) {
     for (const uuid of new Set(uuids)) {
-      if (uuid !== remaining.uuid) {
+      if (uuid !== remaining?.uuid) {
         db.query("DELETE FROM message WHERE uuid = $uuid").run({ uuid });
       }
+    }
+
+    if (remaining === undefined) {
+      return;
     }
 
     db.query(
@@ -192,13 +196,7 @@ async function sendMessage(
       content: remaining.content,
       uuid: remaining.uuid,
     });
-    return;
-  }
 
-  if (response.ok && remaining === undefined) {
-    for (const uuid of uuids) {
-      db.query("DELETE FROM message WHERE uuid = $uuid").run({ uuid });
-    }
     return;
   }
 
