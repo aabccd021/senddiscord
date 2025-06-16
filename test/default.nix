@@ -43,6 +43,7 @@ let
     "resetafter-4"
     "long-line"
     "long-line-middle"
+    "batch"
   ];
 
 in
