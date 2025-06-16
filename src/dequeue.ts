@@ -86,18 +86,46 @@ function setRateLimit({
   transaction();
 }
 
+function splitMessage(content: string): {
+  readonly send: string;
+  readonly remaining: string;
+} {
+  const maxLength = 2000;
+  if (content.length <= maxLength) {
+    return { send: content, remaining: "" };
+  }
+
+  const lines = content.split("\n");
+  let send = "";
+  while (true) {
+    const line = lines.shift();
+    if (line === undefined) {
+      break;
+    }
+    if (send.length + line.length + 1 > maxLength) {
+      lines.unshift(line);
+      break;
+    }
+    send = send.length > 0 ? `${send}\n${line}` : line;
+  }
+
+  const remaining = lines.join("\n");
+  return { send, remaining };
+}
+
 async function sendMessage(
   db: sqlite.Database,
   message: Message,
 ): Promise<void> {
   const { uuid, webhookUrl, content } = message;
+  const { send, remaining } = splitMessage(content);
   const response = await fetch(webhookUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      content: content,
+      content: send,
     }),
   });
 
@@ -115,7 +143,16 @@ async function sendMessage(
   });
 
   if (response.ok) {
-    db.query("DELETE FROM message WHERE uuid = $uuid").run({ uuid: uuid });
+    if (remaining === "") {
+      db.query("DELETE FROM message WHERE uuid = $uuid").run({ uuid: uuid });
+    } else {
+      db.query(
+        "UPDATE message SET content = $remaining WHERE uuid = $uuid",
+      ).run({
+        remaining: remaining,
+        uuid: uuid,
+      });
+    }
   } else {
     db.query(
       "UPDATE message SET error_count = error_count + 1 WHERE uuid = $uuid",
