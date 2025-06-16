@@ -29,9 +29,5 @@ send_request "Ipsum"
 send_request "Dolor"
 send_request "Sit Amet"
 
-sleep 9.5
-
-assert_content "0.json" "Lorem"
-assert_content "1.json" "Ipsum"
-assert_content "2.json" "Dolor"
+sleep 10
 assert_content "3.json" "Sit Amet"

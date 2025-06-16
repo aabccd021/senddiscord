@@ -73,6 +73,7 @@ async function main(): Promise<void> {
       content TEXT NOT NULL,
       created_time INTEGER NOT NULL,
       error_count INTEGER NOT NULL DEFAULT 0,
+      is_processing INTEGER NOT NULL DEFAULT 0,
       CONSTRAINT uuid_pk PRIMARY KEY (uuid),
       CONSTRAINT webhook_url_fk FOREIGN KEY (webhook_url) REFERENCES webhook (url)
     ) STRICT;

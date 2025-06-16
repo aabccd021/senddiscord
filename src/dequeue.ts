@@ -86,7 +86,7 @@ function setRateLimit({
   transaction();
 }
 
-async function dequeueMessage(
+async function sendMessage(
   db: sqlite.Database,
   message: Message,
 ): Promise<void> {
@@ -175,7 +175,7 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
   }
 
   try {
-    await dequeueMessage(db, message);
+    await sendMessage(db, message);
   } finally {
     db.query(
       "UPDATE ratelimit SET is_processing = 0 WHERE bucket = $bucket",
