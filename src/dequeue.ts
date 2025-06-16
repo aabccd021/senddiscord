@@ -173,51 +173,34 @@ async function sendMessage(
     },
   });
 
-  if (response.ok) {
-    for (const uuid of new Set(uuids)) {
-      if (uuid !== remaining?.uuid) {
-        db.query("DELETE FROM message WHERE uuid = $uuid").run({ uuid });
-      }
-    }
+  if (!response.ok) {
+    throw new Error(
+      `Failed to send message to ${webhookUrl}: ${response.status} - ${JSON.stringify(jsonBody)}`,
+    );
+  }
 
-    if (remaining === undefined) {
-      return;
+  for (const uuid of new Set(uuids)) {
+    if (uuid !== remaining?.uuid) {
+      db.query("DELETE FROM message WHERE uuid = $uuid").run({ uuid });
     }
+  }
 
-    db.query(
-      `
+  if (remaining === undefined) {
+    return;
+  }
+
+  db.query(
+    `
       UPDATE message 
       SET 
         content = $content,
         is_processing = 0
       WHERE uuid = $uuid
       `,
-    ).run({
-      content: remaining.content,
-      uuid: remaining.uuid,
-    });
-
-    return;
-  }
-
-  for (const uuid of uuids) {
-    db.query(`
-      UPDATE message 
-      SET 
-        error_count = error_count + 1,
-        is_processing = 0
-      WHERE uuid = $uuid
-    `);
-    console.error(
-      [
-        "Failed to process message",
-        `UUID: ${uuid}`,
-        `Status: ${response.status}`,
-        `Headers: ${JSON.stringify(response.headers)}`,
-        `Body: ${JSON.stringify(jsonBody)}`,
-      ].join(" "),
-    );
-  }
+  ).run({
+    content: remaining.content,
+    uuid: remaining.uuid,
+  });
 }
 
 export async function dequeue(db: sqlite.Database): Promise<void> {
@@ -319,12 +302,25 @@ ORDER BY message.error_count ASC, message.created_time ASC
     uuids.push(nextMessage.uuid);
   }
 
-  await sendMessage(
-    db,
-    uuids,
-    message.ratelimitBucket,
-    message.webhookUrl,
-    accContent,
-    remaining,
-  );
+  try {
+    await sendMessage(
+      db,
+      uuids,
+      message.ratelimitBucket,
+      message.webhookUrl,
+      accContent,
+      remaining,
+    );
+  } finally {
+    for (const uuid of uuids) {
+      db.query(`
+      UPDATE message 
+      SET 
+        error_count = error_count + 1,
+        is_processing = 0
+      WHERE uuid = $uuid
+    `);
+      console.error(`Failed to process message. UUID: ${uuid}`);
+    }
+  }
 }
