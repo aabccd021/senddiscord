@@ -41,6 +41,7 @@ let
     "resetafter-2"
     "resetafter-3"
     "resetafter-4"
+    "long-line"
   ];
 
 in
