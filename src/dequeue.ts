@@ -202,7 +202,6 @@ async function sendMessage(
 }
 
 export async function dequeue(db: sqlite.Database): Promise<void> {
-  console.info("Dequeueing messages...");
   const selectMessage = db.query(`
     SELECT 
       message.uuid,

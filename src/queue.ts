@@ -52,7 +52,6 @@ export async function handleQueueRequest(
   db: sqlite.Database,
   request: Request,
 ): Promise<Response> {
-  console.info("Received request:", request.method, request.url);
   const webhookUrl = request.headers.get("X-Discord-Webhook-Url");
   if (webhookUrl === null) {
     return new Response("Missing X-Discord-Webhook-Url header", {
