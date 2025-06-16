@@ -313,12 +313,12 @@ ORDER BY message.error_count ASC, message.created_time ASC
     for (const uuid of uuids) {
       db.query(
         `
-      UPDATE message 
-      SET 
-        is_processing = 0,
-        error_count = error_count + 1
-      WHERE uuid = $uuid
-    `,
+        UPDATE message 
+        SET 
+          is_processing = 0,
+          error_count = error_count + 1
+        WHERE uuid = $uuid
+      `,
       ).run({ uuid });
     }
     throw err;
@@ -326,10 +326,10 @@ ORDER BY message.error_count ASC, message.created_time ASC
     for (const uuid of uuids) {
       db.query(
         `
-      UPDATE message 
-      SET is_processing = 0
-      WHERE uuid = $uuid
-    `,
+        UPDATE message 
+        SET is_processing = 0
+        WHERE uuid = $uuid
+      `,
       ).run({ uuid });
     }
   }
