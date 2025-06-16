@@ -222,26 +222,26 @@ async function sendMessage(
 
 export async function dequeue(db: sqlite.Database): Promise<void> {
   const selectMessage = db.query(`
-    SELECT 
-      message.uuid,
-      message.webhook_url AS webhookUrl,
-      message.content,
-      message.created_time AS createdTime,
-      ratelimit.bucket AS ratelimitBucket
-    FROM message
-    JOIN webhook ON message.webhook_url = webhook.url
-    LEFT JOIN ratelimit ON webhook.ratelimit_bucket = ratelimit.bucket
-    WHERE ratelimit.is_processing = 0
-      AND ratelimit.reset_time < $now
-      AND message.error_count < 10
-    ORDER BY message.error_count ASC, message.created_time ASC
-  `);
-
-  const setRatelimitIsProcessing = db.query(`
-    UPDATE ratelimit
-    SET is_processing = 1
-    WHERE bucket = $bucket
-  `);
+SELECT 
+  message.uuid,
+  message.webhook_url AS webhookUrl,
+  message.content,
+  message.created_time AS createdTime,
+  ratelimit.bucket AS ratelimitBucket
+FROM message
+JOIN webhook ON message.webhook_url = webhook.url
+JOIN ratelimit ON webhook.ratelimit_bucket = ratelimit.bucket
+WHERE ratelimit.reset_time < $now
+  AND message.error_count < 10
+  AND NOT EXISTS (
+    SELECT 1
+    FROM message m
+    JOIN webhook w ON m.webhook_url = w.url
+    WHERE w.ratelimit_bucket = webhook.ratelimit_bucket
+      AND m.is_processing = 1
+  )
+ORDER BY message.error_count ASC, message.created_time ASC
+`);
 
   const setMessageIsProcessing = db.query(`
     UPDATE message
@@ -255,7 +255,6 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
     const message = selectMessage.get({ now });
     t.assert(message, MessageNullable);
     if (message != null) {
-      setRatelimitIsProcessing.run({ bucket: message.ratelimitBucket });
       setMessageIsProcessing.run({ uuid: message.uuid });
     }
     return message;
@@ -320,20 +319,12 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
     uuids.push(nextMessage.uuid);
   }
 
-  try {
-    await sendMessage(
-      db,
-      uuids,
-      message.ratelimitBucket,
-      message.webhookUrl,
-      accContent,
-      remaining,
-    );
-  } finally {
-    db.query(
-      "UPDATE ratelimit SET is_processing = 0 WHERE bucket = $bucket",
-    ).run({
-      bucket: message.ratelimitBucket,
-    });
-  }
+  await sendMessage(
+    db,
+    uuids,
+    message.ratelimitBucket,
+    message.webhookUrl,
+    accContent,
+    remaining,
+  );
 }

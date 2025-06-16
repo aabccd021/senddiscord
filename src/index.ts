@@ -56,9 +56,7 @@ async function main(): Promise<void> {
 
     CREATE TABLE IF NOT EXISTS ratelimit (
       bucket TEXT PRIMARY KEY,
-      reset_time INTEGER NOT NULL,
-      is_processing INTEGER NOT NULL DEFAULT 0,
-      CONSTRAINT is_processing_boolean CHECK (is_processing IN (0, 1))
+      reset_time INTEGER NOT NULL
     ) STRICT;
 
     CREATE TABLE IF NOT EXISTS webhook (
@@ -75,7 +73,8 @@ async function main(): Promise<void> {
       error_count INTEGER NOT NULL DEFAULT 0,
       is_processing INTEGER NOT NULL DEFAULT 0,
       CONSTRAINT uuid_pk PRIMARY KEY (uuid),
-      CONSTRAINT webhook_url_fk FOREIGN KEY (webhook_url) REFERENCES webhook (url)
+      CONSTRAINT webhook_url_fk FOREIGN KEY (webhook_url) REFERENCES webhook (url),
+      CONSTRAINT is_processing_boolean CHECK (is_processing IN (0, 1))
     ) STRICT;
   `);
 
