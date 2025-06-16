@@ -203,9 +203,11 @@ async function sendMessage(
   }
 
   for (const uuid of uuids) {
-    db.query(
-      "UPDATE message SET error_count = error_count + 1 WHERE uuid = $uuid",
-    );
+    db.query(`
+      UPDATE message 
+      SET error_count = error_count + 1 
+      WHERE uuid = $uuid
+    `);
     console.error(
       [
         "Failed to process message",
