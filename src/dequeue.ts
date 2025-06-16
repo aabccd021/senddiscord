@@ -187,7 +187,7 @@ async function sendMessage(
         content = $content,
         is_processing = 0
       WHERE uuid = $uuid
-    `,
+      `,
     ).run({
       content: remaining.content,
       uuid: remaining.uuid,
