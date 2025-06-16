@@ -102,6 +102,16 @@ function splitMessage(content: string): {
     if (line === undefined) {
       break;
     }
+    if (line.length > maxLength) {
+      if (send.length > 0) {
+        lines.unshift(line);
+      } else {
+        send += line.slice(0, maxLength);
+        const remainingLine = line.slice(maxLength);
+        lines.unshift(remainingLine);
+      }
+      break;
+    }
     if (send.length + line.length + 1 > maxLength) {
       lines.unshift(line);
       break;
