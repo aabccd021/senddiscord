@@ -24,18 +24,18 @@ assert_content_length() {
   fi
 }
 
-# content of length 300 characters
 content=""
 for i in $(seq 1 30); do
   content="${content}1234567890"
 done
 
+# send 14 requests, 300 characters each
 for i in $(seq 1 14); do
   send_request "$content"
 done
 
 sleep 20
 
-assert_content_length "0.json" "1805" # 5 is from newlines
-assert_content_length "1.json" "1805" # 5 is from newlines
-assert_content_length "2.json" "601"  # 3 is from newlines
+assert_content_length "0.json" "1805" # 6 lines
+assert_content_length "1.json" "1805" # 6 lines
+assert_content_length "2.json" "601"  # 2 lines

@@ -46,7 +46,7 @@ send_request "Ipsum"
 send_request "Dolor"
 send_request "Sit Amet"
 
-sleep 7.5
+sleep 8
 
 assert_content "0.json" 1505 "Lorem"
 assert_content "1.json" 1505 "Ipsum"
