@@ -1,13 +1,12 @@
 send_request() {
   curl \
     --request POST \
-    --url http://localhost/ \
-    --unix-socket ./server.sock \
+    --url http://localhost:3000/ \
     --silent \
     --show-error \
     --fail \
     --header 'Content-Type: application/json' \
-    --header 'X-Discord-Webhook-Url: http://localhost:3000' \
+    --header 'X-Discord-Webhook-Url: http://localhost:3001' \
     --data "{
       \"content\": \"$1\"
     }"

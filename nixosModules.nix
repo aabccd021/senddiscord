@@ -31,13 +31,12 @@
             content=$(echo "$stdin" | jq -R -s .)
             exec curl \
               --request POST \
-              --url http://localhost/ \
-              --unix-socket ./server.sock \
-              --silent \
+              --url http://localhost:3000/ \
+                            --silent \
               --show-error \
               --fail \
               --header 'Content-Type: application/json' \
-              --header 'X-Discord-Webhook-Url: http://localhost:3000' \
+              --header 'X-Discord-Webhook-Url: http://localhost:3001' \
               --data "{
                 \"content\": $content
               }"

@@ -32,13 +32,11 @@ async function main(): Promise<void> {
         type: "string",
         short: "d",
         default: "/var/lib/discord-webhook-dispatcher/message_db/db.sqlite",
-        description: "Path to the SQLite database file.",
       },
-      socket: {
+      port: {
         type: "string",
-        short: "s",
-        default: "/run/discord-webhook-dispatcher.sock",
-        description: "Path to the Unix socket for the server.",
+        short: "p",
+        default: "3000",
       },
     },
   });
@@ -81,7 +79,7 @@ async function main(): Promise<void> {
   const server = Bun.serve({
     fetch: (request: Request): Promise<Response> =>
       handleQueueRequest(db, request),
-    unix: args.values.socket,
+    port: Number.parseInt(args.values.port, 10),
   });
 
   await $`systemd-notify --ready --no-block`;

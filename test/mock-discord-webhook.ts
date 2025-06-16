@@ -44,7 +44,7 @@ async function createResponse(): Promise<Response> {
 
 async function main(): Promise<void> {
   Bun.serve({
-    port: 3000,
+    port: 3001,
     fetch: async (request: Request): Promise<Response> => {
       if (request.body === null) {
         return createResponse();
