@@ -159,10 +159,7 @@ async function sendMessage(
     } else {
       db.query(
         "UPDATE message SET content = $remaining WHERE uuid = $uuid",
-      ).run({
-        remaining: remaining,
-        uuid: uuid,
-      });
+      ).run({ remaining, uuid });
     }
   } else {
     db.query(
