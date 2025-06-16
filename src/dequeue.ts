@@ -199,6 +199,7 @@ async function sendMessage(
     for (const uuid of uuids) {
       db.query("DELETE FROM message WHERE uuid = $uuid").run({ uuid });
     }
+    return;
   }
 
   for (const uuid of uuids) {
