@@ -202,27 +202,28 @@ async function sendMessage(
 }
 
 export async function dequeue(db: sqlite.Database): Promise<void> {
+  console.info("Dequeueing messages...");
   const selectMessage = db.query(`
-SELECT 
-  message.uuid,
-  message.webhook_url AS webhookUrl,
-  message.content,
-  message.created_time AS createdTime,
-  ratelimit.bucket AS ratelimitBucket
-FROM message
-JOIN webhook ON message.webhook_url = webhook.url
-JOIN ratelimit ON webhook.ratelimit_bucket = ratelimit.bucket
-WHERE ratelimit.reset_time < $now
-  AND message.error_count < 10
-  AND NOT EXISTS (
-    SELECT 1
-    FROM message m
-    JOIN webhook w ON m.webhook_url = w.url
-    WHERE w.ratelimit_bucket = webhook.ratelimit_bucket
-      AND m.is_processing = 1
-  )
-ORDER BY message.error_count ASC, message.created_time ASC
-`);
+    SELECT 
+      message.uuid,
+      message.webhook_url AS webhookUrl,
+      message.content,
+      message.created_time AS createdTime,
+      ratelimit.bucket AS ratelimitBucket
+    FROM message
+    JOIN webhook ON message.webhook_url = webhook.url
+    JOIN ratelimit ON webhook.ratelimit_bucket = ratelimit.bucket
+    WHERE ratelimit.reset_time < $now
+      AND message.error_count < 10
+      AND NOT EXISTS (
+        SELECT 1
+        FROM message m
+        JOIN webhook w ON m.webhook_url = w.url
+        WHERE w.ratelimit_bucket = webhook.ratelimit_bucket
+          AND m.is_processing = 1
+      )
+    ORDER BY message.error_count ASC, message.created_time ASC
+  `);
 
   const setMessageIsProcessing = db.query(`
     UPDATE message
