@@ -12,22 +12,80 @@ const Message = t.object({
 
 const MessageNullable = t.nullable(Message);
 
-type Message = t.Infer<typeof Message>;
+const Mess = t.object({
+  uuid: t.string(),
+  content: t.string(),
+});
+
+const MessNullable = t.nullable(Mess);
+
+type Mess = t.Infer<typeof Mess>;
+
+function splitMessages(args: { accContent: string; next: Mess }): {
+  readonly accContent: string;
+  readonly remaining?: Mess;
+} {
+  let accContent = args.accContent;
+
+  const lines = args.next.content.split("\n");
+  while (true) {
+    const line = lines.shift();
+
+    // no more lines to process, no remaining, delete all sent messages
+    if (line === undefined) {
+      return {
+        accContent: accContent,
+      };
+    }
+
+    // line too long, but we already have some content to send
+    if (line.length > 2000 && accContent !== "") {
+      lines.unshift(line);
+      return {
+        accContent: accContent,
+        remaining: { uuid: args.next.uuid, content: lines.join("\n") },
+      };
+    }
+
+    // lines too long, but we don't have any content to send yet. Cut and send the line.
+    if (line.length > 2000 && accContent === "") {
+      const send = line.slice(0, 2000);
+      const remainingLine = line.slice(2000);
+      lines.unshift(remainingLine);
+      return {
+        accContent: send,
+        remaining: { uuid: args.next.uuid, content: lines.join("\n") },
+      };
+    }
+
+    // line is short enough, but in total we would exceed the limit
+    const nextAcc = accContent + (accContent.length > 0 ? `\n${line}` : line);
+    if (nextAcc.length > 2000) {
+      lines.unshift(line);
+      return {
+        accContent,
+        remaining: { uuid: args.next.uuid, content: lines.join("\n") },
+      };
+    }
+
+    accContent = nextAcc;
+  }
+}
 
 function setRateLimit({
   db,
-  message,
+  ratelimitBucket,
   webhookUrl,
   response,
 }: {
   db: sqlite.Database;
-  message: Message;
+  ratelimitBucket: string;
   webhookUrl: string;
   response: SyncResponse;
 }): void {
   const { resetTime, bucket } = parseRateLimitHeader(response, webhookUrl);
 
-  if (message.ratelimitBucket === bucket) {
+  if (ratelimitBucket === bucket) {
     db.query(
       `
       UPDATE ratelimit
@@ -80,71 +138,33 @@ function setRateLimit({
       webhookUrl: webhookUrl,
     });
 
-    deleteUnusedRatelimit.run({ bucket: message.ratelimitBucket });
+    deleteUnusedRatelimit.run({ bucket: ratelimitBucket });
   });
 
   transaction();
 }
 
-function splitMessage(content: string): {
-  readonly send: string;
-  readonly remaining: string;
-} {
-  const maxLength = 2000;
-  if (content.length <= maxLength) {
-    return { send: content, remaining: "" };
-  }
-
-  const lines = content.split("\n");
-  let send = "";
-  while (true) {
-    const line = lines.shift();
-    if (line === undefined) {
-      break;
-    }
-    if (line.length > maxLength) {
-      if (send.length > 0) {
-        lines.unshift(line);
-        break;
-      }
-      const cutPoint = maxLength - send.length;
-      send += line.slice(0, cutPoint);
-      const remainingLine = line.slice(cutPoint);
-      lines.unshift(remainingLine);
-      break;
-    }
-    if (send.length + line.length + 1 > maxLength) {
-      lines.unshift(line);
-      break;
-    }
-    send = send.length > 0 ? `${send}\n${line}` : line;
-  }
-
-  const remaining = lines.join("\n");
-  return { send, remaining };
-}
-
 async function sendMessage(
   db: sqlite.Database,
-  message: Message,
+  uuids: readonly string[],
+  ratelimitBucket: string,
+  webhookUrl: string,
+  content: string,
+  remaining?: Mess,
 ): Promise<void> {
-  const { uuid, webhookUrl, content } = message;
-  const { send, remaining } = splitMessage(content);
   const response = await fetch(webhookUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      content: send,
-    }),
+    body: JSON.stringify({ content }),
   });
 
   const jsonBody = await response.json();
 
   setRateLimit({
     db,
-    message,
+    ratelimitBucket,
     webhookUrl,
     response: {
       status: response.status,
@@ -153,15 +173,35 @@ async function sendMessage(
     },
   });
 
-  if (response.ok) {
-    if (remaining === "") {
-      db.query("DELETE FROM message WHERE uuid = $uuid").run({ uuid: uuid });
-    } else {
-      db.query(
-        "UPDATE message SET content = $remaining WHERE uuid = $uuid",
-      ).run({ remaining, uuid });
+  if (response.ok && remaining !== undefined) {
+    const deleteUuids = new Set(uuids);
+    deleteUuids.delete(remaining.uuid);
+    for (const uuid of deleteUuids) {
+      db.query("DELETE FROM message WHERE uuid = $uuid").run({ uuid });
     }
-  } else {
+
+    db.query(
+      `
+      UPDATE message 
+      SET 
+        content = $content,
+        is_processing = 0
+      WHERE uuid = $uuid
+    `,
+    ).run({
+      content: remaining.content,
+      uuid: remaining.uuid,
+    });
+    return;
+  }
+
+  if (response.ok && remaining === undefined) {
+    for (const uuid of uuids) {
+      db.query("DELETE FROM message WHERE uuid = $uuid").run({ uuid });
+    }
+  }
+
+  for (const uuid of uuids) {
     db.query(
       "UPDATE message SET error_count = error_count + 1 WHERE uuid = $uuid",
     );
@@ -194,10 +234,16 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
     ORDER BY message.error_count ASC, message.created_time ASC
   `);
 
-  const updateRatelimit = db.query(`
+  const setRatelimitIsProcessing = db.query(`
     UPDATE ratelimit
     SET is_processing = 1
     WHERE bucket = $bucket
+  `);
+
+  const setMessageIsProcessing = db.query(`
+    UPDATE message
+    SET is_processing = 1
+    WHERE uuid = $uuid
   `);
 
   const now = Date.now();
@@ -206,7 +252,8 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
     const message = selectMessage.get({ now });
     t.assert(message, MessageNullable);
     if (message != null) {
-      updateRatelimit.run({ bucket: message.ratelimitBucket });
+      setRatelimitIsProcessing.run({ bucket: message.ratelimitBucket });
+      setMessageIsProcessing.run({ uuid: message.uuid });
     }
     return message;
   });
@@ -219,8 +266,66 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
     return;
   }
 
+  let accContent = "";
+  let next = {
+    uuid: message.uuid,
+    content: message.content,
+  };
+  const uuids: string[] = [message.uuid];
+  let remaining: Mess | undefined;
+
+  while (true) {
+    const splitResult = splitMessages({ accContent, next });
+    accContent = splitResult.accContent;
+
+    // sopt fetching if we already have some remaining content
+    if (splitResult.remaining !== undefined) {
+      remaining = splitResult.remaining;
+      break;
+    }
+
+    const getNextMessage = db.query(`
+      SELECT uuid, content
+      FROM message
+      WHERE webhook_url = $webhookUrl
+        AND is_processing = 0
+      ORDER BY error_count ASC, created_time ASC
+    `);
+
+    const getNextTx = db.transaction(() => {
+      const nextMessage = getNextMessage.get({
+        webhookUrl: message.webhookUrl,
+      });
+      t.assert(nextMessage, MessNullable);
+      if (nextMessage != null) {
+        setMessageIsProcessing.run({ uuid: nextMessage.uuid });
+      }
+      return nextMessage;
+    });
+
+    const nextMessage = getNextTx();
+    t.assert(nextMessage, MessNullable);
+
+    if (nextMessage === null) {
+      break;
+    }
+
+    next = {
+      uuid: nextMessage.uuid,
+      content: nextMessage.content,
+    };
+    uuids.push(nextMessage.uuid);
+  }
+
   try {
-    await sendMessage(db, message);
+    await sendMessage(
+      db,
+      uuids,
+      message.ratelimitBucket,
+      message.webhookUrl,
+      accContent,
+      remaining,
+    );
   } finally {
     db.query(
       "UPDATE ratelimit SET is_processing = 0 WHERE bucket = $bucket",
