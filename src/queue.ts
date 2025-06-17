@@ -62,6 +62,10 @@ export async function handleQueueRequest(
   const message = await request.json();
   t.assert(message, Message);
 
+  if (message.content === "") {
+    return new Response("Message content cannot be empty", { status: 400 });
+  }
+
   await insertWebhookIfAbsent(db, webhookUrl);
 
   db.query(
