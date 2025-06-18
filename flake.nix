@@ -25,7 +25,7 @@
 
       overlays.default = (
         final: prev: {
-          discord-sendmail = import ./package.nix {
+          senddiscord = import ./package.nix {
             pkgs = final;
             inputs = inputs;
           };
@@ -43,14 +43,14 @@
         ];
       };
 
-      discord-sendmail = import ./package.nix {
+      senddiscord = import ./package.nix {
         pkgs = pkgs;
         inputs = inputs;
       };
 
       test = import ./test {
         pkgs = pkgs;
-        discord-sendmail = discord-sendmail;
+        senddiscord = senddiscord;
       };
 
       treefmtEval = inputs.treefmt-nix.lib.evalModule pkgs {
@@ -97,6 +97,9 @@
       };
 
       devShells.default = pkgs.mkShellNoCC {
+        shellHook = ''
+          ${pkgs.bun}/bin/bun install
+        '';
         buildInputs = builtins.attrValues inputPackages;
       };
 
@@ -114,7 +117,7 @@
         // scripts
         // inputPackages
         // {
-          discord-sendmail = discord-sendmail;
+          senddiscord = senddiscord;
           tests = pkgs.linkFarm "tests" test;
           formatting = treefmtEval.config.build.check self;
           formatter = formatter;

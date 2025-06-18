@@ -1,4 +1,4 @@
-{ pkgs, discord-sendmail }:
+{ pkgs, senddiscord }:
 let
 
   testServer = pkgs.runCommandLocal "test-server" { } ''
@@ -21,7 +21,7 @@ let
         pkgs.systemd-notify-fifo-server
         pkgs.jq
         testServer
-        discord-sendmail
+        senddiscord
       ];
     } (builtins.readFile ./test.sh);
 

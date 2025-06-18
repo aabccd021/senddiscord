@@ -1,7 +1,7 @@
 { inputs }:
 { lib, ... }:
 {
-  options.services.discord-sendmail = {
+  options.services.senddiscord = {
     enable = lib.mkEnableOption "Discord sendmail service";
     webhookUrl = lib.mkOption {
       type = lib.types.str;
@@ -19,7 +19,7 @@
         };
       in
       {
-        discord-sendmail = package;
+        senddiscord = package;
         sendmail = final.writeShellApplication {
           name = "sendmail";
           runtimeInputs = [

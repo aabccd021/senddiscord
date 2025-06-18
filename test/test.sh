@@ -24,7 +24,7 @@ mkfifo ./server.fifo
 sed "s/^/${blue}[server]${reset} /" ./server.fifo &
 
 # direct pipe will not forward signals to the server, so we use a fifo
-discord-webhook-dispatcher --db ./db.sqlite 2>&1 >server.fifo &
+senddiscord-server --db ./db.sqlite 2>&1 >server.fifo &
 server_pid=$!
 
 while true; do
