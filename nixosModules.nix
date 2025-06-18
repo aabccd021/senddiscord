@@ -7,7 +7,7 @@
 }:
 
 let
-  cfg = config.services.send-discord;
+  cfg = config.services.senddiscord;
 
   server = import ./package.nix {
     pkgs = pkgs;
@@ -17,7 +17,7 @@ in
 
 {
 
-  options.services.send-discord = {
+  options.services.senddiscord = {
     enable = lib.mkEnableOption "Send Discord Webhook Dispatcher";
     webhookUrlFile = lib.mkOption {
       type = lib.types.path;

@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "send-discord-webhook",
+      "name": "senddiscord",
       "dependencies": {
         "superstruct": "^2.0.2",
       },

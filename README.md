@@ -1,4 +1,4 @@
-# send-discord-webhook
+# senddiscord
 
 # TODO
 
