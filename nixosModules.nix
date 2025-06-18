@@ -18,7 +18,7 @@ in
 {
 
   options.services.send-discord = {
-    enable = lib.mkEnableOption "Discord Sendmail Service";
+    enable = lib.mkEnableOption "Send Discord Webhook Dispatcher";
     webhookUrlFile = lib.mkOption {
       type = lib.types.path;
     };
@@ -63,10 +63,6 @@ in
       })
     ];
 
-    environment.systemPackages = [
-      pkgs.sendmail
-    ];
-
     services.mail.sendmailSetuidWrapper = {
       program = "sendmail";
       source = "${pkgs.sendmail}/bin/sendmail";
@@ -76,7 +72,7 @@ in
       group = "root";
     };
 
-    systemd.services.discord-sendmail = {
+    systemd.services.senddiscord = {
       wantedBy = [ "multi-user.target" ];
       serviceConfig.Type = "notify";
       environment.PORT = toString cfg.port;
