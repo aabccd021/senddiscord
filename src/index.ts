@@ -31,7 +31,7 @@ async function main(): Promise<void> {
       db: {
         type: "string",
         short: "d",
-        default: "/var/lib/senddiscord-server/message_db/db.sqlite",
+        default: "/var/lib/senddiscord/message_db/db.sqlite",
       },
       port: {
         type: "string",

@@ -81,7 +81,7 @@ in
       '';
     };
     systemd.tmpfiles.rules = [
-      "d /var/lib/discord-webhook-dispatcher/message_db 0700 root root"
+      "d /var/lib/senddiscord/message_db 0700 root root"
     ];
   };
 
