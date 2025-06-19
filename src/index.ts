@@ -9,15 +9,15 @@ import { handleQueueRequest } from "./queue.ts";
 // TODO; journald compatible logging with prefix like <3> or <6>
 
 process.on("uncaughtException", (error) => {
-  console.error("Uncaught Exception:", error);
+  console.error("<3> Uncaught Exception:", error);
 });
 
 process.on("unhandledRejection", (reason, promise) => {
-  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+  console.error("<3> Unhandled Rejection at:", promise, "reason:", reason);
 });
 
 process.on("uncaughtExceptionMonitor", (error) => {
-  console.error("Uncaught Exception Monitor:", error);
+  console.error("<3> Uncaught Exception Monitor:", error);
 });
 
 process.on("warning", (warning) => {
@@ -93,7 +93,7 @@ async function main(): Promise<void> {
     try {
       await dequeue(db);
     } catch (error) {
-      console.error("Fatal error in dequeue:", error);
+      console.error("<3> Fatal error in dequeue:", error);
       await Bun.sleep(1000);
     }
   }

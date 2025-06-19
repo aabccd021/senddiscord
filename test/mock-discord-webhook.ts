@@ -86,7 +86,7 @@ async function main(): Promise<void> {
 
   if (responseList !== null && responseList.length > 0) {
     console.error(
-      `Not all headers were used, ${responseList.length} headers left:`,
+      `<3> Not all headers were used, ${responseList.length} headers left:`,
       responseList,
     );
     process.exit(1);

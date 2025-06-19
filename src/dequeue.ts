@@ -310,13 +310,15 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
       remaining,
     );
   } catch (err) {
+    console.error(
+      `<3> Error while sending message: ${uuids.join(" ")} ${accContent}`,
+      err,
+    );
     for (const uuid of uuids) {
       db.query(
         `
         UPDATE message 
-        SET 
-          is_processing = 0,
-          error_count = error_count + 1
+        SET error_count = error_count + 1
         WHERE uuid = $uuid
       `,
       ).run({ uuid });
