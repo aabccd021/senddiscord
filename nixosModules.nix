@@ -63,6 +63,10 @@ in
       })
     ];
 
+    environment.systemPackages = [
+      pkgs.sendmail
+    ];
+
     services.mail.sendmailSetuidWrapper = {
       program = "sendmail";
       source = "${pkgs.sendmail}/bin/sendmail";
