@@ -221,7 +221,7 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
         WHERE w.ratelimit_bucket = webhook.ratelimit_bucket
           AND m.is_processing = 1
       )
-    ORDER BY message.error_count ASC, message.created_time ASC
+    ORDER BY message.created_time ASC
   `);
 
   const setMessageIsProcessing = db.query(`
@@ -272,7 +272,7 @@ export async function dequeue(db: sqlite.Database): Promise<void> {
       FROM message
       WHERE webhook_url = $webhookUrl
         AND is_processing = 0
-      ORDER BY error_count ASC, created_time ASC
+      ORDER BY created_time ASC
     `);
 
     const getNextTx = db.transaction(() => {
