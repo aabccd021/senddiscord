@@ -1,6 +1,6 @@
 import type * as sqlite from "bun:sqlite";
 import * as t from "superstruct";
-import { type SyncResponse, parseRateLimitHeader } from "./util.ts";
+import { parseRateLimitHeader, type SyncResponse } from "./util.ts";
 
 const Message = t.object({
   uuid: t.string(),

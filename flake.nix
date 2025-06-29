@@ -104,8 +104,8 @@
         buildInputs = builtins.attrValues inputPackages;
       };
 
-      scripts.fix = pkgs.writeShellApplication {
-        name = "fix";
+      scripts.prefmt = pkgs.writeShellApplication {
+        name = "prefmt";
         runtimeInputs = [ pkgs.biome ];
         text = ''
           biome check --fix --unsafe
