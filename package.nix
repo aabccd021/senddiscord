@@ -1,7 +1,8 @@
 { pkgs, inputs }:
 let
 
-  nodeModules = inputs.bun2nix.lib.x86_64-linux.mkBunNodeModules (import ./bun.nix);
+  bunNix = import ./bun.nix;
+  nodeModules = inputs.bun2nix.lib.x86_64-linux.mkBunNodeModules { packages = bunNix; };
 
   server = pkgs.runCommand "senddiscord-server" { } ''
     cp -Lr ${./src} ./src
