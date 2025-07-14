@@ -1,7 +1,7 @@
 {
   nixConfig.allow-import-from-derivation = false;
 
-  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
   inputs.treefmt-nix.url = "github:numtide/treefmt-nix";
   inputs.bun2nix.url = "github:baileyluTCD/bun2nix";
   inputs.systemd-notify-fifo.url = "github:aabccd021/systemd-notify-fifo";
