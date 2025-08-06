@@ -55,12 +55,12 @@
 
       treefmtEval = inputs.treefmt-nix.lib.evalModule pkgs {
         projectRootFile = "flake.nix";
-        programs.prettier.enable = true;
         programs.nixfmt.enable = true;
         programs.biome.enable = true;
+        programs.biome.settings = builtins.fromJSON (builtins.readFile ./biome.json);
+        programs.biome.formatUnsafe = true;
+        settings.formatter.biome.options = [ "--vcs-enabled=false" ];
         programs.shfmt.enable = true;
-        settings.formatter.prettier.priority = 1;
-        settings.formatter.biome.priority = 2;
         settings.global.excludes = [ "LICENSE" ];
       };
 
@@ -80,10 +80,10 @@
       lintCheck = pkgs.runCommand "lintCheck" { } ''
         cp -Lr ${nodeModules}/node_modules ./node_modules
         cp -Lr ${./src} ./src
-        cp -L ${./biome.jsonc} ./biome.jsonc
+        cp -L ${./biome.json} ./biome.json
         cp -L ${./tsconfig.json} ./tsconfig.json
         cp -L ${./package.json} ./package.json
-        ${pkgs.biome}/bin/biome check --error-on-warnings
+        ${pkgs.biome}/bin/biome check --vcs-enabled=false --error-on-warnings
         touch $out
       '';
 
@@ -108,7 +108,7 @@
         name = "prefmt";
         runtimeInputs = [ pkgs.biome ];
         text = ''
-          biome check --fix --unsafe
+          biome check --vcs-enabled=false --fix --unsafe
         '';
       };
 
