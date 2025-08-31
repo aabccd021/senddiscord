@@ -1,9 +1,7 @@
 let counter = -1;
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 let responseList: any[] | null = null;
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 async function getResponseList(): Promise<any[]> {
   if (responseList !== null) {
     return responseList;

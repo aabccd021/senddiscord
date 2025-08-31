@@ -18,7 +18,7 @@ let
       env.TEST_FILE = "${./.}/${name}.sh";
       buildInputs = [
         pkgs.curl
-        pkgs.systemd-notify-fifo-server
+        pkgs.systemd-notify-fifo
         pkgs.jq
         testServer
         senddiscord

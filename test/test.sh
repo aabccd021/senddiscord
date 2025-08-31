@@ -8,11 +8,9 @@ export NOTIFY_SOCKET
 
 mkdir requests
 
-mkfifo ./systemd_notify_ready.fifo
-systemd-notify-fifo-server \
-  -out ./systemd_notify.fifo \
-  -ready ./systemd_notify_ready.fifo &
-cat ./systemd_notify_ready.fifo
+systemd-notify-server-prepare
+systemd-notify-server &
+systemd-notify-server-wait
 
 mkfifo ./discord.fifo
 sed "s/^/${cyan}[discord]${reset} /" ./discord.fifo &
@@ -27,12 +25,7 @@ sed "s/^/${blue}[server]${reset} /" ./server.fifo &
 senddiscord-server --db ./db.sqlite 2>&1 >server.fifo &
 server_pid=$!
 
-while true; do
-  result=$(cat ./systemd_notify.fifo)
-  if [ "$result" = "READY=1" ]; then
-    break
-  fi
-done
+systemd-notify-wait
 
 bash -euo pipefail "$TEST_FILE" 2>&1 | sed "s/^/${yellow}[test]${reset} /"
 
