@@ -33,8 +33,7 @@ function getRatelimitResetAfter(response: SyncResponse): number {
     return 0;
   }
 
-  const ratelimitResetAfter =
-    response.headers.get("X-RateLimit-Reset-After") ?? "0";
+  const ratelimitResetAfter = response.headers.get("X-RateLimit-Reset-After") ?? "0";
 
   return Number.parseInt(ratelimitResetAfter, 10);
 }
@@ -48,9 +47,7 @@ export function parseRateLimitHeader(
 } {
   const bucket = response.headers.get("X-RateLimit-Bucket");
   if (bucket === null) {
-    throw new Error(
-      `Missing X-RateLimit-Bucket header in response from ${webhookUrl}`,
-    );
+    throw new Error(`Missing X-RateLimit-Bucket header in response from ${webhookUrl}`);
   }
 
   const bodyRetryAfter = getBodyRetryAfter(response);

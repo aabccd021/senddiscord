@@ -6,13 +6,8 @@ const Message = t.object({
   content: t.string(),
 });
 
-async function insertWebhookIfAbsent(
-  db: sqlite.Database,
-  webhookUrl: string,
-): Promise<void> {
-  const webhook = db
-    .query("SELECT url FROM webhook WHERE url = $url")
-    .get({ url: webhookUrl });
+async function insertWebhookIfAbsent(db: sqlite.Database, webhookUrl: string): Promise<void> {
+  const webhook = db.query("SELECT url FROM webhook WHERE url = $url").get({ url: webhookUrl });
 
   if (webhook !== null) {
     return;
@@ -40,18 +35,13 @@ async function insertWebhookIfAbsent(
     resetTime: resetTime,
   });
 
-  db.query(
-    "INSERT INTO webhook (url, ratelimit_bucket) VALUES ($url, $bucket)",
-  ).run({
+  db.query("INSERT INTO webhook (url, ratelimit_bucket) VALUES ($url, $bucket)").run({
     url: webhookUrl,
     bucket: bucket,
   });
 }
 
-export async function handleQueueRequest(
-  db: sqlite.Database,
-  request: Request,
-): Promise<Response> {
+export async function handleQueueRequest(db: sqlite.Database, request: Request): Promise<Response> {
   const webhookUrl = request.headers.get("X-Discord-Webhook-Url");
   if (webhookUrl === null) {
     return new Response("Missing X-Discord-Webhook-Url header", {

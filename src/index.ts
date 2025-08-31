@@ -77,8 +77,7 @@ async function main(): Promise<void> {
   `);
 
   const server = Bun.serve({
-    fetch: (request: Request): Promise<Response> =>
-      handleQueueRequest(db, request),
+    fetch: (request: Request): Promise<Response> => handleQueueRequest(db, request),
     port: Number.parseInt(args.values.port, 10),
   });
 

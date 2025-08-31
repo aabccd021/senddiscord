@@ -67,10 +67,7 @@ async function main(): Promise<void> {
       }
 
       counter += 1;
-      await Bun.write(
-        `requests/${counter}.json`,
-        JSON.stringify(body, null, 2),
-      );
+      await Bun.write(`requests/${counter}.json`, JSON.stringify(body, null, 2));
 
       return createResponse();
     },

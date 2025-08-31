@@ -9,19 +9,6 @@
   outputs =
     { self, ... }@inputs:
     let
-      lib = inputs.nixpkgs.lib;
-
-      collectInputs =
-        is:
-        pkgs.linkFarm "inputs" (
-          builtins.mapAttrs (
-            name: i:
-            pkgs.linkFarm name {
-              self = i.outPath;
-              deps = collectInputs (lib.attrByPath [ "inputs" ] { } i);
-            }
-          ) is
-        );
 
       overlays.default = (
         final: prev: {
@@ -54,12 +41,11 @@
       };
 
       treefmtEval = inputs.treefmt-nix.lib.evalModule pkgs {
-        projectRootFile = "flake.nix";
         programs.nixfmt.enable = true;
         programs.biome.enable = true;
-        programs.biome.settings = builtins.fromJSON (builtins.readFile ./biome.json);
         programs.biome.formatUnsafe = true;
-        settings.formatter.biome.options = [ "--vcs-enabled=false" ];
+        programs.biome.settings.formatter.indentStyle = "space";
+        programs.biome.settings.formatter.lineWidth = 100;
         programs.shfmt.enable = true;
         settings.global.excludes = [ "LICENSE" ];
       };
@@ -80,29 +66,10 @@
       lintCheck = pkgs.runCommand "lintCheck" { } ''
         cp -Lr ${nodeModules}/node_modules ./node_modules
         cp -Lr ${./src} ./src
-        cp -L ${./biome.json} ./biome.json
         cp -L ${./tsconfig.json} ./tsconfig.json
         cp -L ${./package.json} ./package.json
-        ${pkgs.biome}/bin/biome check --vcs-enabled=false --error-on-warnings
         touch $out
       '';
-
-      inputPackages = {
-        bun = pkgs.bun;
-        biome = pkgs.biome;
-        typescript = pkgs.typescript;
-        typescript-language-server = pkgs.typescript-language-server;
-        vscode-langservers-extracted = pkgs.vscode-langservers-extracted;
-        bun2nix = inputs.bun2nix.packages.x86_64-linux.default;
-        nixd = pkgs.nixd;
-      };
-
-      devShells.default = pkgs.mkShellNoCC {
-        shellHook = ''
-          ${pkgs.bun}/bin/bun install
-        '';
-        buildInputs = builtins.attrValues inputPackages;
-      };
 
       scripts.prefmt = pkgs.writeShellApplication {
         name = "prefmt";
@@ -113,16 +80,13 @@
       };
 
       packages =
-        devShells
-        // test
+        test
         // scripts
-        // inputPackages
         // {
           senddiscord = senddiscord;
           tests = pkgs.linkFarm "tests" test;
           formatting = treefmtEval.config.build.check self;
           formatter = formatter;
-          allInputs = collectInputs inputs;
           typeCheck = typeCheck;
           lintCheck = lintCheck;
         };
@@ -137,7 +101,6 @@
 
       checks.x86_64-linux = packages;
       formatter.x86_64-linux = formatter;
-      devShells.x86_64-linux = devShells;
 
       overlays = overlays;
       nixosModules = nixosModules;
