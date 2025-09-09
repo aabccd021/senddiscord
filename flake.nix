@@ -3,7 +3,6 @@
 
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
   inputs.treefmt-nix.url = "github:numtide/treefmt-nix";
-  inputs.bun2nix.url = "github:baileyluTCD/bun2nix";
   inputs.systemd-notify-fifo.url = "github:aabccd021/systemd-notify-fifo";
 
   outputs =
@@ -19,9 +18,7 @@
         }
       );
 
-      nixosModules.default = import ./nixosModules.nix {
-        inputs = inputs;
-      };
+      nixosModules.default = import ./nixosModules.nix;
 
       pkgs = import inputs.nixpkgs {
         system = "x86_64-linux";
@@ -30,10 +27,7 @@
         ];
       };
 
-      senddiscord = import ./package.nix {
-        pkgs = pkgs;
-        inputs = inputs;
-      };
+      senddiscord = import ./package.nix { pkgs = pkgs; };
 
       test = import ./test {
         pkgs = pkgs;
@@ -52,11 +46,17 @@
 
       formatter = treefmtEval.config.build.wrapper;
 
-      bunNix = import ./bun.nix;
-      nodeModules = inputs.bun2nix.lib.x86_64-linux.mkBunNodeModules { packages = bunNix; };
+      update-npm-deps = pkgs.writeShellApplication {
+        name = "update-npm-deps";
+        text = ''
+          nix run github:aabccd021/bun3nix install @types/bun superstruct > ./npm_deps.nix
+        '';
+      };
+
+      npm_deps = import ./npm_deps.nix { pkgs = pkgs; };
 
       typeCheck = pkgs.runCommand "typeCheck" { } ''
-        cp -Lr ${nodeModules}/node_modules ./node_modules
+        cp -Lr ${npm_deps}/lib/node_modules ./node_modules
         cp -Lr ${./src} ./src
         cp -L ${./tsconfig.json} ./tsconfig.json
         ${pkgs.typescript}/bin/tsc
@@ -64,10 +64,9 @@
       '';
 
       lintCheck = pkgs.runCommand "lintCheck" { } ''
-        cp -Lr ${nodeModules}/node_modules ./node_modules
+        cp -Lr ${npm_deps}/lib/node_modules ./node_modules
         cp -Lr ${./src} ./src
         cp -L ${./tsconfig.json} ./tsconfig.json
-        cp -L ${./package.json} ./package.json
         touch $out
       '';
 
@@ -89,6 +88,7 @@
           formatter = formatter;
           typeCheck = typeCheck;
           lintCheck = lintCheck;
+          update-npm-deps = update-npm-deps;
         };
 
     in

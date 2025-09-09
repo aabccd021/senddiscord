@@ -1,14 +1,12 @@
-{ pkgs, inputs }:
+{ pkgs }:
 let
 
-  bunNix = import ./bun.nix;
-  nodeModules = inputs.bun2nix.lib.x86_64-linux.mkBunNodeModules { packages = bunNix; };
+  npm_deps = import ./npm_deps.nix { pkgs = pkgs; };
 
   server = pkgs.runCommand "senddiscord-server" { } ''
     cp -Lr ${./src} ./src
-    cp -Lr ${nodeModules}/node_modules ./node_modules
+    cp -Lr ${npm_deps}/lib/node_modules ./node_modules
     cp -L ${./tsconfig.json} ./tsconfig.json
-    cp -L ${./package.json} ./package.json
     ${pkgs.bun}/bin/bun build ./src/index.ts \
       --compile \
       --minify \

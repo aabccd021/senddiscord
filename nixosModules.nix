@@ -1,4 +1,3 @@
-{ inputs }:
 {
   pkgs,
   lib,
@@ -9,10 +8,7 @@
 let
   cfg = config.services.senddiscord;
 
-  server = import ./package.nix {
-    pkgs = pkgs;
-    inputs = inputs;
-  };
+  server = import ./package.nix { pkgs = pkgs; };
 in
 
 {
