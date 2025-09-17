@@ -9,6 +9,35 @@ let
   cfg = config.services.senddiscord;
 
   server = import ./package.nix { pkgs = pkgs; };
+
+  sendmail = pkgs.writeShellApplication {
+    name = "sendmail";
+    runtimeInputs = [
+      pkgs.jq
+      pkgs.curl
+    ];
+    runtimeEnv.WEBHOOK_URL_FILE = cfg.webhookUrlFile;
+    runtimeEnv.PORT = toString cfg.port;
+    text = ''
+      set -x
+      stdin=$(cat)
+      if [ -z "$stdin" ]; then
+        echo "No input provided. Exiting."
+        exit 0
+      fi
+      content=$(printf "%s" "$stdin" | jq --raw-input --slurp --raw-output '@json')
+      webhook_url=$(cat "$WEBHOOK_URL_FILE")
+      exec curl \
+        --request POST \
+        --url "http://127.0.0.1:$PORT" \
+        --silent \
+        --show-error \
+        --fail \
+        --header 'Content-Type: application/json' \
+        --header "X-Discord-Webhook-Url: $webhook_url" \
+        --data "{ \"content\": $content }"
+    '';
+  };
 in
 
 {
@@ -26,42 +55,10 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    nixpkgs.overlays = [
-      (final: prev: {
-        sendmail = final.writeShellApplication {
-          name = "sendmail";
-          runtimeInputs = [
-            final.jq
-            final.curl
-          ];
-          runtimeEnv.WEBHOOK_URL_FILE = cfg.webhookUrlFile;
-          runtimeEnv.PORT = toString cfg.port;
-          text = ''
-            set -x
-            stdin=$(cat)
-            if [ -z "$stdin" ]; then
-              echo "No input provided. Exiting."
-              exit 0
-            fi
-            content=$(printf "%s" "$stdin" | jq --raw-input --slurp --raw-output '@json')
-            webhook_url=$(cat "$WEBHOOK_URL_FILE")
-            exec curl \
-              --request POST \
-              --url "http://127.0.0.1:$PORT" \
-              --silent \
-              --show-error \
-              --fail \
-              --header 'Content-Type: application/json' \
-              --header "X-Discord-Webhook-Url: $webhook_url" \
-              --data "{ \"content\": $content }"
-          '';
-        };
-      })
-    ];
 
     services.mail.sendmailSetuidWrapper = {
       program = "sendmail";
-      source = "${pkgs.sendmail}/bin/sendmail";
+      source = "${sendmail}/bin/sendmail";
       setuid = false;
       setgid = false;
       owner = "root";
