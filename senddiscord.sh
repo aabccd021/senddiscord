@@ -4,6 +4,11 @@ set -eu
 
 webhook_url=$(cat "$WEBHOOK_URL_FILE")
 
+mkdir -p /var/lib/senddiscord
+if [ ! -f /var/lib/senddiscord/messages.txt ]; then
+  touch /var/lib/senddiscord/messages.txt
+fi
+
 running=1
 trap 'running=0' TERM
 
