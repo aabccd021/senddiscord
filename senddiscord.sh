@@ -20,6 +20,7 @@ while [ "$running" -eq 1 ]; do
 
   content=$(head -n 1 /var/lib/senddiscord/messages.txt || true)
   if [ -z "$content" ]; then
+    sleep 10
     continue
   fi
 
