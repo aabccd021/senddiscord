@@ -5,7 +5,7 @@ set -eu
 webhook_url=$(cat "$WEBHOOK_URL_FILE")
 
 mkdir -p /var/lib/senddiscord
-if [ ! -f /var/lib/senddiscord/messages.txt ]; then
+if [ ! -e /var/lib/senddiscord/messages.txt ]; then
   touch /var/lib/senddiscord/messages.txt
 fi
 
@@ -17,8 +17,7 @@ trap 'running=0' TERM
 while [ "$running" -eq 1 ]; do
   sleep 2
 
-  file_lines=$(wc -l </var/lib/senddiscord/messages.txt)
-  if [ "$file_lines" -eq 0 ]; then
+  if [ ! -s /var/lib/senddiscord/messages.txt ]; then
     sleep 10
     continue
   fi
