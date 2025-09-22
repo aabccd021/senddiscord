@@ -43,10 +43,11 @@ while [ "$running" -eq 1 ]; do
   if [ "$status" = "429" ]; then
     echo "Rate limited, retrying in 60 seconds..." >&2
     sleep 60
-  else
-    if [ "$status" != "204" ]; then
-      echo "Failed to send message, status: $status, content: $content" >&2
-    fi
-    sed -i '1d' /var/lib/senddiscord/messages.txt
+    continue
   fi
+
+  if [ "$status" != "204" ]; then
+    echo "Failed to send message, status: $status, content: $content" >&2
+  fi
+  sed -i '1d' /var/lib/senddiscord/messages.txt
 done
