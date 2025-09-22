@@ -2,5 +2,6 @@
 
 # TODO
 
-- sort by just date instead of err_count. err_count is only used for filterning, not sorting
-- Send discord webhook without worrying about rate limiting or message length limit
+- use simple shell script
+- journald compatible logging with prefix like <3> or <6>
+- exponential backoff for retries (max 1 days)
