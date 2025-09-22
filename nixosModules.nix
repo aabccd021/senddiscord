@@ -10,7 +10,7 @@ let
 
   senddiscord = pkgs.writeShellApplication {
     name = "senddiscord";
-    text = builtins.readfile ./senddiscord.sh;
+    text = builtins.readFile ./senddiscord.sh;
     runtimeInputs = [
       pkgs.curl
       pkgs.jq
