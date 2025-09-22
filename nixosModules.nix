@@ -46,7 +46,6 @@ in
 
     systemd.services.senddiscord = {
       wantedBy = [ "multi-user.target" ];
-      serviceConfig.Type = "notify";
       environment.WEBHOOK_URL_FILE = cfg.webhookUrlFile;
       script = lib.getExe senddiscord;
     };
