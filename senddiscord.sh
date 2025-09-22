@@ -9,7 +9,7 @@ if [ ! -f /var/lib/senddiscord/messages.txt ]; then
   touch /var/lib/senddiscord/messages.txt
 fi
 
-# everyone can read and write, no one can execute
+chmod 0777 /var/lib/senddiscord
 chmod 0666 /var/lib/senddiscord/messages.txt
 
 running=1

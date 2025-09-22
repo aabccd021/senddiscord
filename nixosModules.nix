@@ -50,10 +50,6 @@ in
       script = lib.getExe senddiscord;
     };
 
-    systemd.tmpfiles.rules = [
-      "d /var/lib/senddiscord 0700 root root"
-    ];
-
   };
 
 }
