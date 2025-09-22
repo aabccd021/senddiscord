@@ -40,9 +40,22 @@ while [ "$running" -eq 1 ]; do
   )
 
   if [ "$status" = "429" ]; then
-    echo "Rate limited, retrying in 60 seconds..."
-    sleep 60
+    echo "Rate limited, retrying in 60 seconds..." >&2
+    echo "x" >>/var/lib/senddiscord/retry_count.txt
+    retry_count=$(wc -l </var/lib/senddiscord/retry_count.txt)
+    if [ "$retry_count" -le 10 ]; then
+      echo "Retry count: $retry_count" >&2
+      sleep 60
+    else
+      echo "Too many retries, dropping message: $content" >&2
+      sed -i '1d' /var/lib/senddiscord/messages.txt
+      rm /var/lib/senddiscord/retry_count.txt
+    fi
   else
+    echo "Message sent with status code $status" >&2
     sed -i '1d' /var/lib/senddiscord/messages.txt
+    if [ -f /var/lib/senddiscord/retry_count.txt ]; then
+      rm /var/lib/senddiscord/retry_count.txt
+    fi
   fi
 done
